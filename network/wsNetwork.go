@@ -688,9 +688,13 @@ func (wn *WebsocketNetwork) Start() {
 			wn.log.Errorf("network could not listen %v: %s", wn.config.NetAddress, err)
 			return
 		}
+		// #NODELY.IO
+		// Increase listeting limit by RestConnectionsHardLimit
+		// Allow long lived limiting dowstream to do it's work
+
 		// wrap the original listener with a limited connection listener
 		listener = limitlistener.RejectingLimitListener(
-			listener, uint64(wn.config.IncomingConnectionsLimit), wn.log)
+			listener, uint64(wn.config.IncomingConnectionsLimit)+wn.config.RestConnectionsSoftLimit, wn.log)
 		// wrap the limited connection listener with a requests tracker listener
 		wn.listener = wn.requestsTracker.Listener(listener)
 		wn.log.Debugf("listening on %s", wn.listener.Addr().String())
