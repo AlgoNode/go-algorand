@@ -650,7 +650,11 @@ func (node *AlgorandFullNode) GetPendingTransaction(txID transactions.Txid) (res
 		}
 		found = true
 
-		// Keep looking in the ledger.
+		// #NODELY.IO
+		// Return the transaction as pending in case it is both in the pool and already in the ledger
+		// This can lead to race conditions
+		return
+
 	}
 
 	var maxLife basics.Round

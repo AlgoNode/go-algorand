@@ -148,7 +148,12 @@ func mergeConfigFromFile(configpath string, source Local) (Local, error) {
 	// For now, all relays (listening for incoming connections) are also Archival
 	// We can change this logic in the future, but it's currently the sanest default.
 	if source.NetAddress != "" {
-		source.Archival = true
+
+		// #NODELY.IO
+		// Enable non-archival relays
+		// Network with such relays require special relay config and archival servers
+
+		// source.Archival = true
 		source.EnableLedgerService = true
 		source.EnableBlockService = true
 
