@@ -689,8 +689,8 @@ func (wn *WebsocketNetwork) Start() {
 			return
 		}
 		// #NODELY.IO
-		// Increase listeting limit by RestConnectionsHardLimit
-		// Allow long lived limiting dowstream to do it's work
+		// Increase listening limit by RestConnectionsHardLimit
+		// Allow long lived limiting downstream to do it's work
 
 		// wrap the original listener with a limited connection listener
 		listener = limitlistener.RejectingLimitListener(
