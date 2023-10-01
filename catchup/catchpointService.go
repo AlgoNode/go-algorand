@@ -820,7 +820,26 @@ func (cs *CatchpointCatchupService) checkLedgerDownload() error {
 	if err != nil {
 		return fmt.Errorf("failed to parse catchpoint label : %v", err)
 	}
-	peerSelector := makePeerSelector(cs.net, []peerClass{{initialRank: peerRankInitialFirstPriority, peerClass: network.PeersPhonebookRelays}})
+
+	// #NODELY.IO
+	// Allow catchup availability check on a networks with dedicated archivers
+	var peerSelector *peerSelector
+
+	if cs.config.EnableCatchupFromArchiveServers {
+		peerSelector = makePeerSelector(
+			cs.net,
+			[]peerClass{
+				{initialRank: peerRankInitialFirstPriority, peerClass: network.PeersPhonebookArchivers},
+				{initialRank: peerRankInitialSecondPriority, peerClass: network.PeersPhonebookRelays},
+			})
+	} else {
+		peerSelector = makePeerSelector(
+			cs.net,
+			[]peerClass{
+				{initialRank: peerRankInitialFirstPriority, peerClass: network.PeersPhonebookRelays},
+			})
+	}
+
 	ledgerFetcher := makeLedgerFetcher(cs.net, cs.ledgerAccessor, cs.log, cs, cs.config)
 	for i := 0; i < cs.config.CatchupLedgerDownloadRetryAttempts; i++ {
 		psp, peerError := peerSelector.getNextPeer()
