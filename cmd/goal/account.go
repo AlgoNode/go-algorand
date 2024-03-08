@@ -54,6 +54,7 @@ var (
 	defaultAccount     bool
 	unencryptedWallet  bool
 	online             bool
+	onlineqrcode       bool
 	accountName        string
 	transactionFee     uint64
 	statusChangeLease  string
@@ -149,6 +150,7 @@ func init() {
 	changeOnlineCmd.Flags().StringVarP(&partKeyFile, "partkeyfile", "", "", "Participation key file (required if no --address)")
 	changeOnlineCmd.Flags().StringVarP(&signerAddress, "signer", "S", "", "Address of key to sign with, if different due to rekeying")
 	changeOnlineCmd.Flags().BoolVarP(&online, "online", "o", true, "Set this account to online or offline")
+	changeOnlineCmd.Flags().BoolVarP(&onlineqrcode, "qrcode", "", false, "Show QR Code for online/offline on mobile wallet")
 	changeOnlineCmd.Flags().Uint64VarP(&transactionFee, "fee", "f", 0, "The Fee to set on the status change transaction (defaults to suggested fee)")
 	changeOnlineCmd.Flags().Uint64VarP(&firstValid, "firstRound", "", 0, "")
 	changeOnlineCmd.Flags().Uint64VarP(&firstValid, "firstvalid", "", 0, "FirstValid for the status change transaction (0 for current)")
@@ -795,7 +797,7 @@ var rewardsCmd = &cobra.Command{
 
 var changeOnlineCmd = &cobra.Command{
 	Use:   "changeonlinestatus",
-	Short: "Change online status for the specified account",
+	Short: "Change online status for the specified account or generate QR Code for mobile wallet",
 	Long:  `Change online status for the specified account. Set online should be 1 to set online, 0 to set offline. The broadcast transaction will be valid for a limited number of rounds. goal will provide the TXID of the transaction if successful. Going online requires that the given account has a valid participation key. If the participation key is specified using --partkeyfile, you must separately install the participation key from that file using "goal account installpartkey".`,
 	Args:  validateNoPosArgsFn,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -834,6 +836,17 @@ var changeOnlineCmd = &cobra.Command{
 			if accountAddress == "" {
 				accountAddress = part.Parent.String()
 			}
+		}
+
+		// print Online/Offline ARC-XXX QR Code to stdout
+		if onlineqrcode {
+			err := showAccountOnlineQRCode(
+				accountAddress, online, client,
+			)
+			if err != nil {
+				reportErrorf(err.Error())
+			}
+			return
 		}
 
 		firstTxRound, lastTxRound, _, err := client.ComputeValidityRounds(firstValid, lastValid, numValidRounds)
