@@ -12,6 +12,7 @@ import (
 )
 
 const ARC0026URLHANDLER = "algorand"
+const ARC0026TYPEKEYREG = "keyreg"
 
 // QRKeyregRequest captures the fields used for key registration transactions in QR Code form.
 type QRKeyregRequest struct {
@@ -22,17 +23,16 @@ type QRKeyregRequest struct {
 
 func (krg QRKeyregRequest) URI() string {
 	var bitOnline int8
+	strSender := krg.Sender.String()
 	if krg.Online {
 		bitOnline = 1
-	}
-	strSender := krg.Sender.String()
-	strVotePK := base64.RawURLEncoding.EncodeToString(krg.VoteParticipationKey)
-	strSelPK := base64.RawURLEncoding.EncodeToString(krg.SelectionParticipationKey)
-	strStprfPK := base64.RawURLEncoding.EncodeToString(*krg.StateProofKey)
-	if krg.Online {
-		return fmt.Sprintf("%s://%s?t=keyreg&onl=%d&vpk=%s&spk=%s&stprf=%s&vf=%d&vl=%d&vd=%d",
+		strVotePK := base64.RawURLEncoding.EncodeToString(krg.VoteParticipationKey)
+		strSelPK := base64.RawURLEncoding.EncodeToString(krg.SelectionParticipationKey)
+		strStprfPK := base64.RawURLEncoding.EncodeToString(*krg.StateProofKey)
+		return fmt.Sprintf("%s://%s?t=%s&onl=%d&vpk=%s&spk=%s&stprf=%s&vf=%d&vl=%d&vd=%d",
 			ARC0026URLHANDLER,
 			strSender,
+			ARC0026TYPEKEYREG,
 			bitOnline,
 			strVotePK,
 			strSelPK,
@@ -42,9 +42,10 @@ func (krg QRKeyregRequest) URI() string {
 			krg.VoteKeyDilution,
 		)
 	}
-	return fmt.Sprintf("%s://%s?onl=%d",
+	return fmt.Sprintf("%s://%s?t=%s&onl=%d",
 		ARC0026URLHANDLER,
 		strSender,
+		ARC0026TYPEKEYREG,
 		bitOnline,
 	)
 }
