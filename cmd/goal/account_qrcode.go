@@ -1,17 +1,67 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/algorand/go-algorand/daemon/algod/api/server/v2/generated/model"
 	"github.com/algorand/go-algorand/data/basics"
 	"github.com/algorand/go-algorand/libgoal"
-	"github.com/mr-tron/base58"
 
 	qrcode "github.com/xi/go-tinyqr"
 )
 
-// print Online/Offline ARC-XXX QR Code to stdout
+const ARC0026URLHANDLER = "algorand"
+
+// QRKeyregRequest captures the fields used for key registration transactions in QR Code form.
+type QRKeyregRequest struct {
+	model.AccountParticipation
+	Sender basics.Address
+	Online bool
+}
+
+func (krg QRKeyregRequest) URI() string {
+	var bitOnline int8
+	if krg.Online {
+		bitOnline = 1
+	}
+	strSender := krg.Sender.String()
+	strVotePK := base64.RawURLEncoding.EncodeToString(krg.VoteParticipationKey)
+	strSelPK := base64.RawURLEncoding.EncodeToString(krg.SelectionParticipationKey)
+	strStprfPK := base64.RawURLEncoding.EncodeToString(*krg.StateProofKey)
+	if krg.Online {
+		return fmt.Sprintf("%s://%s?t=keyreg&onl=%d&vpk=%s&spk=%s&stprf=%s&vf=%d&vl=%d&vd=%d",
+			ARC0026URLHANDLER,
+			strSender,
+			bitOnline,
+			strVotePK,
+			strSelPK,
+			strStprfPK,
+			krg.VoteFirstValid,
+			krg.VoteLastValid,
+			krg.VoteKeyDilution,
+		)
+	}
+	return fmt.Sprintf("%s://%s?onl=%d",
+		ARC0026URLHANDLER,
+		strSender,
+		bitOnline,
+	)
+}
+
+func (krg QRKeyregRequest) Print() {
+	uri := krg.URI()
+	fmt.Println("Paste below URL into your browser or scan QR code to online/offline the account")
+	fmt.Println(uri)
+	fmt.Println()
+	qrcode.Print(uri)
+}
+
+func (krg QRKeyregRequest) String() string {
+	return krg.URI()
+}
+
+// print Online/Offline ARC-0026 QR Code to stdout
 func showAccountOnlineQRCode(
 	acct string, goOnline bool, client libgoal.Client,
 ) error {
@@ -25,36 +75,25 @@ func showAccountOnlineQRCode(
 	if err != nil {
 		return err
 	}
-	url := buildARCXXXURL(address, goOnline, part)
-	return qrcode.Print(url)
+	kregreq := makeQRKeyRegRequest(address, goOnline, part)
+	kregreq.Print()
+	return nil
 }
 
-const ARCXXXURLHANDLER = "web+algorand+onl"
+// create QRKeyRegRequest struct for the given address and operation
+func makeQRKeyRegRequest(address basics.Address, goOnline bool, part model.ParticipationKey) *QRKeyregRequest {
 
-// print Online/Offline ARC-XXX URL
-func buildARCXXXURL(address basics.Address, goOnline bool, part model.ParticipationKey) string {
-
-	//use Base58 for URLs
-	vpk58 := base58.Encode(part.Key.VoteParticipationKey)
-	spk58 := base58.Encode(part.Key.SelectionParticipationKey)
-	addr58 := base58.Encode(address[:])
-
-	if goOnline {
-		return fmt.Sprintf("%s://%d/%s/%d/%d/%s/%s",
-			ARCXXXURLHANDLER,
-			1,
-			addr58,
-			part.Key.VoteFirstValid,
-			part.Key.VoteLastValid,
-			vpk58,
-			spk58,
-		)
+	req := &QRKeyregRequest{
+		Online: goOnline,
+		Sender: address,
 	}
-	return fmt.Sprintf("%s://%d/%s",
-		ARCXXXURLHANDLER,
-		0,
-		addr58,
-	)
+
+	//Copy public partcipation key info when going online
+	if goOnline {
+		req.AccountParticipation = part.Key
+	}
+
+	return req
 }
 
 func getCandidatePartKey(address string, c libgoal.Client) (part model.ParticipationKey, err error) {
