@@ -260,6 +260,11 @@ func (node *AlgorandFollowerNode) GetPendingTransaction(_ transactions.Txid) (re
 	return
 }
 
+// GetConnectedPeers returns list of all active peers across WS and P2P networks
+func (node *AlgorandFollowerNode) GetConnectedPeers() (peers []network.Peer, err error) {
+	return node.net.GetPeers(network.PeersConnectedIn, network.PeersConnectedOut), nil
+}
+
 // Status returns a StatusReport structure reporting our status as Active and with our ledger's LastRound
 func (node *AlgorandFollowerNode) Status() (StatusReport, error) {
 	node.syncStatusMu.Lock()

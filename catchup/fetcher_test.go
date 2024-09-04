@@ -208,6 +208,14 @@ func (p *testHTTPPeer) GetAddress() string {
 	return string(*p)
 }
 
+func (p *testHTTPPeer) GetNetworkType() string {
+	return "ws"
+}
+
+func (p *testHTTPPeer) IsOutgoing() bool {
+	return false
+}
+
 func (p *testHTTPPeer) GetHTTPClient() *http.Client {
 	return &http.Client{
 		Transport: &network.HTTPPAddressBoundTransport{

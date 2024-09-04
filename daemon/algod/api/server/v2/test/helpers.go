@@ -37,6 +37,7 @@ import (
 	"github.com/algorand/go-algorand/data/transactions/logic"
 	"github.com/algorand/go-algorand/ledger/simulation"
 	"github.com/algorand/go-algorand/logging"
+	"github.com/algorand/go-algorand/network"
 	"github.com/algorand/go-algorand/node"
 	"github.com/algorand/go-algorand/protocol"
 	"github.com/algorand/go-algorand/util/db"
@@ -158,6 +159,10 @@ func (m *mockNode) Status() (node.StatusReport, error) {
 }
 func (m *mockNode) GenesisID() string {
 	return m.genesisID
+}
+
+func (m *mockNode) GetConnectedPeers() (peers []network.Peer, err error) {
+	return nil, nil
 }
 
 func (m *mockNode) GenesisHash() crypto.Digest {

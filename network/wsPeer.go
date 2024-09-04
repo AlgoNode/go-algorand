@@ -302,6 +302,8 @@ type wsPeer struct {
 type HTTPPeer interface {
 	GetAddress() string
 	GetHTTPClient() *http.Client
+	GetNetworkType() string
+	IsOutgoing() bool
 }
 
 // IPAddressable is addressable with either IPv4 or IPv6 address
@@ -319,6 +321,17 @@ type UnicastPeer interface {
 	Version() string
 	Request(ctx context.Context, tag Tag, topics Topics) (resp *Response, e error)
 	Respond(ctx context.Context, reqMsg IncomingMessage, outMsg OutgoingMessage) (e error)
+}
+
+func (ws *wsPeer) GetNetworkType() string {
+	if ws.rootURL != "" && ws.rootURL[0] == '/' {
+		return "p2p"
+	}
+	return "ws"
+}
+
+func (ws *wsPeer) IsOutgoing() bool {
+	return ws.outgoing
 }
 
 // TCPInfoUnicastPeer exposes information about the underlying connection if available on the platform

@@ -74,6 +74,14 @@ func (p *testHTTPPeer) GetHTTPPeer() network.HTTPPeer {
 	return p
 }
 
+func (p *testHTTPPeer) GetNetworkType() string {
+	return "ws"
+}
+
+func (p *testHTTPPeer) IsOutgoing() bool {
+	return false
+}
+
 type basicRPCNode struct {
 	listener net.Listener
 	server   http.Server
