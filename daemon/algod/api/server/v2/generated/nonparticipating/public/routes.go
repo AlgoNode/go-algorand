@@ -81,6 +81,9 @@ type ServerInterface interface {
 	// Get a state proof that covers a given round
 	// (GET /v2/stateproofs/{round})
 	GetStateProof(ctx echo.Context, round uint64) error
+	// GetConnectedPeers gets the list of connected peers along with the type, direction and ID
+	// (GET /v2/status/peers)
+	GetConnectedPeers(ctx echo.Context) error 
 	// Gets the current node status.
 	// (GET /v2/status)
 	GetStatus(ctx echo.Context) error
@@ -594,6 +597,19 @@ func (w *ServerInterfaceWrapper) GetStatus(ctx echo.Context) error {
 	return err
 }
 
+
+// GetConnectedPeers converts echo context to params.
+func (w *ServerInterfaceWrapper) GetConnectedPeers(ctx echo.Context) error {
+	var err error
+
+	ctx.Set(Api_keyScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetConnectedPeers(ctx)
+	return err
+}
+
+
 // WaitForBlock converts echo context to params.
 func (w *ServerInterfaceWrapper) WaitForBlock(ctx echo.Context) error {
 	var err error
@@ -734,6 +750,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/v2/ledger/supply", wrapper.GetSupply, m...)
 	router.GET(baseURL+"/v2/stateproofs/:round", wrapper.GetStateProof, m...)
 	router.GET(baseURL+"/v2/status", wrapper.GetStatus, m...)
+	router.GET(baseURL+"/v2/status/peers", wrapper.GetConnectedPeers, m...)
 	router.GET(baseURL+"/v2/status/wait-for-block-after/:round", wrapper.WaitForBlock, m...)
 	router.POST(baseURL+"/v2/teal/compile", wrapper.TealCompile, m...)
 	router.POST(baseURL+"/v2/teal/disassemble", wrapper.TealDisassemble, m...)

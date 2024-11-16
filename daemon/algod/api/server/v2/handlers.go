@@ -55,6 +55,7 @@ import (
 	"github.com/algorand/go-algorand/ledger/simulation"
 	"github.com/algorand/go-algorand/libgoal/participation"
 	"github.com/algorand/go-algorand/logging"
+	"github.com/algorand/go-algorand/network"
 	"github.com/algorand/go-algorand/node"
 	"github.com/algorand/go-algorand/protocol"
 	"github.com/algorand/go-algorand/rpcs"
@@ -126,6 +127,7 @@ type LedgerForAPI interface {
 type NodeInterface interface {
 	LedgerForAPI() LedgerForAPI
 	Status() (s node.StatusReport, err error)
+	GetConnectedPeers() (peers_in []network.Peer, peers_out []network.Peer, err error)
 	GenesisID() string
 	GenesisHash() crypto.Digest
 	BroadcastSignedTxGroup(txgroup []transactions.SignedTxn) error
@@ -936,6 +938,57 @@ func (v2 *Handlers) GetSupply(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, supply)
+}
+
+type ConnectedPeersResponse struct {
+	Address  string `json:"address"`
+	Network  string `json:"network"`
+	Outgoing bool   `json:"outgoing"`
+}
+
+func appendPeers(response []ConnectedPeersResponse, peers []network.Peer, outgoing bool) []ConnectedPeersResponse {
+	for _, p := range peers {
+		if wsPeer, validUPeer := p.(network.HTTPPeer); validUPeer {
+			addr := wsPeer.GetAddress()
+			network := "ws"
+			if len(addr) > 0 && addr[0] == '/' {
+				network = "p2p"
+			}
+			response = append(response, ConnectedPeersResponse{
+				Address:  addr,
+				Network:  network,
+				Outgoing: outgoing,
+			})
+		} else {
+			if wsPeer, validUPeer := p.(network.UnicastPeer); validUPeer {
+				addr := wsPeer.GetAddress()
+				network := "ws"
+				if len(addr) > 0 && addr[0] == '/' {
+					network = "p2p"
+				}
+				response = append(response, ConnectedPeersResponse{
+					Address:  addr,
+					Network:  network,
+					Outgoing: outgoing,
+				})
+			}
+		}
+	}
+	return response
+}
+
+// GetConnectedPeers gets the list of connected peers along with the type, direction and ID
+// (GET /v2/status/peers)
+func (v2 *Handlers) GetConnectedPeers(ctx echo.Context) error {
+
+	peers_in, peers_out, err := v2.Node.GetConnectedPeers()
+	if err != nil {
+		return internalError(ctx, err, errFailedRetrievingNodeStatus, v2.Log)
+	}
+	response := make([]ConnectedPeersResponse, 0, len(peers_in)+len(peers_out))
+	response = appendPeers(response, peers_in, false)
+	response = appendPeers(response, peers_out, true)
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetStatus gets the current node status.
