@@ -217,9 +217,12 @@ func (t *txidBloomFilter) loadFromDisk(l ledgerForTracker, dbRound basics.Round)
 			t.log.Warnf("txifBloomFilter: filed to load round %d", rnd)
 			return err
 		}
-		if err = t.parseBlock(blk); err != nil {
+		filter, err := t.buildTXFilter(blk)
+		if err != nil {
+			t.log.Warnf("txifBloomFilter: filed to parse round %d", rnd)
 			return err
 		}
+		t.filters[rnd] = filter
 	}
 
 	t.log.Infof("txidBloomFilter: initialized with MaxTxnLife=%d, lowestRound=%d, latestRound=%d",
@@ -228,31 +231,36 @@ func (t *txidBloomFilter) loadFromDisk(l ledgerForTracker, dbRound basics.Round)
 	return nil
 }
 
-func (t *txidBloomFilter) parseBlock(blk bookkeeping.Block) error {
+// buildTXFilter initializes and fills a TX bloom filter
+// number of hashes is set at 8 but filter size depends on the payset size
+// TODO: benchmarks might prove that a simple TXID map might be more efficient below some threshold
+func (t *txidBloomFilter) buildTXFilter(blk bookkeeping.Block) (TXIDBloomFilter, error) {
 	payset, err := blk.DecodePaysetFlat()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	rnd := blk.Round()
-	t.filters[rnd] = createFastTXIDBloomFilter(len(payset))
+	filter := createFastTXIDBloomFilter(len(payset))
 
 	for _, tx := range payset {
-		t.filters[rnd].Add(tx.ID())
+		filter.Add(tx.ID())
 	}
-	return nil
+	return filter, nil
 }
 
 // newBlock is called when a new block is added to the ledger.
 // It creates a new bloom filter for the block's round and populates it with
 // all transaction IDs from the block.
 func (t *txidBloomFilter) newBlock(blk bookkeeping.Block, delta ledgercore.StateDelta) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
 
-	rnd := blk.Round()
-	if err := t.parseBlock(blk); err != nil {
+	filter, err := t.buildTXFilter(blk)
+	if err != nil {
 		return
 	}
+
+	rnd := blk.Round()
+	t.mu.Lock()
+	t.filters[rnd] = filter
+	t.mu.Unlock()
 
 	t.log.Debugf("txidBloomFilter: added bloom filter for round %d with %d transactions",
 		rnd, len(blk.Payset))
