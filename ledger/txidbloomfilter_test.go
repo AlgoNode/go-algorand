@@ -51,7 +51,7 @@ func TestFastTXIDBloomFilter_BasicOperations(t *testing.T) {
 func TestFastTXIDBloomFilter_MultipleTxids(t *testing.T) {
 	partitiontest.PartitionTest(t)
 
-	numTxids := 10_000
+	numTxids := 50_000
 	filter := createFastTXIDBloomFilter(numTxids)
 
 	// Generate and add multiple transaction IDs
@@ -69,7 +69,7 @@ func TestFastTXIDBloomFilter_MultipleTxids(t *testing.T) {
 
 	// Generate and test transaction IDs that were not added
 	// These should mostly return false, but false positives are possible
-	notAddedCount := 10_000
+	notAddedCount := 50_000
 	falsePositives := 0
 	for i := 0; i < notAddedCount; i++ {
 		var txid transactions.Txid
@@ -81,9 +81,9 @@ func TestFastTXIDBloomFilter_MultipleTxids(t *testing.T) {
 		}
 	}
 
-	// With a 0.1% false positive rate and 10000 tests, we expect around 10 false positive
-	// Allow up to 1% to account for random variance
-	require.Less(t, falsePositives, notAddedCount/100,
+	// We expect some false positives
+	// Allow up to x10 the expected FPs to account for random variance
+	require.Less(t, falsePositives, int(10.0*float64(notAddedCount)*DefaultFalsePositiveRate),
 		"False positive rate too high: %d/%d", falsePositives, notAddedCount)
 }
 
@@ -263,11 +263,10 @@ func TestFastTXIDBloomFilter_RealTxids(t *testing.T) {
 
 // BenchmarkFastTXIDBloomFilter_Add benchmarks the Add operation
 func BenchmarkFastTXIDBloomFilter_Add(b *testing.B) {
-	filter := createFastTXIDBloomFilter(10000)
-
 	var txid transactions.Txid
 	_, _ = rand.Read(txid[:])
 
+	filter := createFastTXIDBloomFilter(10_000)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Modify txid slightly for each iteration
@@ -278,7 +277,7 @@ func BenchmarkFastTXIDBloomFilter_Add(b *testing.B) {
 
 // BenchmarkFastTXIDBloomFilter_Test benchmarks the Test operation
 func BenchmarkFastTXIDBloomFilter_Test(b *testing.B) {
-	filter := createFastTXIDBloomFilter(10000)
+	filter := createFastTXIDBloomFilter(10_000)
 
 	var txid transactions.Txid
 	_, _ = rand.Read(txid[:])
@@ -292,7 +291,7 @@ func BenchmarkFastTXIDBloomFilter_Test(b *testing.B) {
 
 // BenchmarkFastTXIDBloomFilter_AddAndTest benchmarks combined Add and Test operations
 func BenchmarkFastTXIDBloomFilter_AddAndTest(b *testing.B) {
-	filter := createFastTXIDBloomFilter(10000)
+	filter := createFastTXIDBloomFilter(10_000)
 
 	var txid transactions.Txid
 	_, _ = rand.Read(txid[:])

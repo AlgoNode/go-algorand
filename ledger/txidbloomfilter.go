@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/binary"
 	"math"
+	"time"
 
 	"github.com/algorand/go-deadlock"
 
@@ -48,14 +49,14 @@ type TXIDBloomFilter interface {
 }
 
 const (
-	// numHashFunctions is the number of hash functions used by the bloom filter.
+	// fixedNumHashFunctions is the number of hash functions used by the bloom filter.
 	// We use k=8 as specified, which allows us to extract 8 uint32 values from
 	// the 32-byte transaction ID (8 * 4 bytes = 32 bytes).
-	numHashFunctions = 8
+	fixedNumHashFunctions = 8
 
-	// defaultFalsePositiveRate is the target false positive rate for the bloom filter.
+	// DefaultFalsePositiveRate is the target false positive rate for the bloom filter.
 	// A rate of 0.001 (0.1%) provides a good balance between memory usage and accuracy.
-	defaultFalsePositiveRate = 0.001
+	DefaultFalsePositiveRate = 0.001
 )
 
 // fastTXIDBloomFilter implements FastTXIDBloomFilter using a bit array.
@@ -69,7 +70,7 @@ type fastTXIDBloomFilter struct {
 	numBits uint32
 }
 
-// createFastTXIDBloomFilter creates a new FastTXIDBloomFilter optimized for the
+// createFastTXIDBloomFilter creates a new TXIDBloomFilter optimized for the
 // expected number of elements. It uses the optimal bloom filter sizing algorithm
 // to minimize false positives while keeping memory usage reasonable.
 //
@@ -91,7 +92,7 @@ func createFastTXIDBloomFilter(numElements int) TXIDBloomFilter {
 	// This formula is derived from minimizing the false positive probability
 	// for a given number of elements and hash functions.
 	n := float64(numElements)
-	p := defaultFalsePositiveRate
+	p := DefaultFalsePositiveRate
 	m := -(n+0.5)*math.Log(p)/math.Pow(math.Log(2), 2) + 1
 
 	numBits := uint32(math.Ceil(m))
@@ -115,7 +116,7 @@ func (f *fastTXIDBloomFilter) Add(txid transactions.Txid) {
 	// The transaction ID is already a cryptographic hash (SHA-512/256), so its bytes
 	// are uniformly distributed and suitable for use as hash values.
 
-	for i := 0; i < numHashFunctions; i++ {
+	for i := 0; i < fixedNumHashFunctions; i++ {
 		// Use little-endian byte order for consistency
 		h := binary.LittleEndian.Uint32(txid[i<<2 : (i<<2)+4])
 		// Map hash value to bit position using modulo
@@ -130,7 +131,7 @@ func (f *fastTXIDBloomFilter) Add(txid transactions.Txid) {
 // Returns true if all corresponding bits are set (might be present, with possible
 // false positives), or false if any bit is not set (definitely not present).
 func (f *fastTXIDBloomFilter) Test(txid transactions.Txid) bool {
-	for i := 0; i < numHashFunctions; i++ {
+	for i := 0; i < fixedNumHashFunctions; i++ {
 		// Use little-endian byte order for consistency
 		h := binary.LittleEndian.Uint32(txid[i<<2 : (i<<2)+4])
 		// Map hash value to bit position using modulo
@@ -212,22 +213,26 @@ func (t *txidBloomFilter) loadFromDisk(l ledgerForTracker, dbRound basics.Round)
 
 	t.lowestRound = startRound
 
+	start := time.Now()
+	t.log.Infof("Loading rounds %d..%d",
+		startRound, latestRound)
+
 	for rnd := latestRound; rnd >= startRound; rnd-- {
 		blk, err := l.Block(rnd)
 		if err != nil {
-			t.log.Warnf("txifBloomFilter: filed to load round %d", rnd)
+			t.log.Warnf("Filed to load round %d", rnd)
 			return err
 		}
 		filter, err := t.buildTXFilter(blk)
 		if err != nil {
-			t.log.Warnf("txifBloomFilter: filed to parse round %d", rnd)
+			t.log.Warnf("Filed to parse round %d", rnd)
 			return err
 		}
 		t.filters[rnd] = filter
 	}
 
-	t.log.Infof("txidBloomFilter: initialized with MaxTxnLife=%d, lowestRound=%d, latestRound=%d",
-		t.maxTxnLife, t.lowestRound, latestRound)
+	t.log.Infof("Loaded %d rounds, lowestRound=%d, latestRound=%d in %s",
+		latestRound-startRound+1, startRound, latestRound, time.Since(start))
 
 	return nil
 }
@@ -252,7 +257,7 @@ func (t *txidBloomFilter) buildTXFilter(blk bookkeeping.Block) (TXIDBloomFilter,
 // It creates a new bloom filter for the block's round and populates it with
 // all transaction IDs from the block.
 func (t *txidBloomFilter) newBlock(blk bookkeeping.Block, delta ledgercore.StateDelta) {
-
+	start := time.Now()
 	filter, err := t.buildTXFilter(blk)
 	if err != nil {
 		return
@@ -263,8 +268,8 @@ func (t *txidBloomFilter) newBlock(blk bookkeeping.Block, delta ledgercore.State
 	t.filters[rnd] = filter
 	t.mu.Unlock()
 
-	t.log.Debugf("txidBloomFilter: added bloom filter for round %d with %d transactions",
-		rnd, len(blk.Payset))
+	t.log.Debugf("Added bloom filter for round %d with %d transactions in %s",
+		rnd, len(blk.Payset), time.Since(start))
 }
 
 // committedUpTo is called when blocks up to the given round have been committed to disk.
@@ -282,7 +287,7 @@ func (t *txidBloomFilter) committedUpTo(committedRound basics.Round) (minRound, 
 	for rnd := range t.filters {
 		if rnd < minRound {
 			delete(t.filters, rnd)
-			t.log.Debugf("txidBloomFilter: removed bloom filter for round %d", rnd)
+			t.log.Debugf("Removed bloom filter for round %d", rnd)
 		}
 	}
 
@@ -332,7 +337,6 @@ func (t *txidBloomFilter) close() {
 
 	// Clear all bloom filters to free memory
 	t.filters = nil
-	t.log.Debug("txidBloomFilter: closed")
 }
 
 // Test checks if a transaction ID might exist in any of the maintained bloom filters.
