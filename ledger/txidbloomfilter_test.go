@@ -51,7 +51,7 @@ func TestFastTXIDBloomFilter_BasicOperations(t *testing.T) {
 func TestFastTXIDBloomFilter_MultipleTxids(t *testing.T) {
 	partitiontest.PartitionTest(t)
 
-	numTxids := 50
+	numTxids := 10_000
 	filter := createFastTXIDBloomFilter(numTxids)
 
 	// Generate and add multiple transaction IDs
@@ -69,7 +69,7 @@ func TestFastTXIDBloomFilter_MultipleTxids(t *testing.T) {
 
 	// Generate and test transaction IDs that were not added
 	// These should mostly return false, but false positives are possible
-	notAddedCount := 100
+	notAddedCount := 10_000
 	falsePositives := 0
 	for i := 0; i < notAddedCount; i++ {
 		var txid transactions.Txid
@@ -81,9 +81,9 @@ func TestFastTXIDBloomFilter_MultipleTxids(t *testing.T) {
 		}
 	}
 
-	// With a 1% false positive rate and 100 tests, we expect around 1 false positive
-	// Allow up to 10% to account for random variance
-	require.Less(t, falsePositives, notAddedCount/10,
+	// With a 0.1% false positive rate and 10000 tests, we expect around 10 false positive
+	// Allow up to 1% to account for random variance
+	require.Less(t, falsePositives, notAddedCount/100,
 		"False positive rate too high: %d/%d", falsePositives, notAddedCount)
 }
 
@@ -156,11 +156,11 @@ func TestFastTXIDBloomFilter_SingleElement(t *testing.T) {
 func TestFastTXIDBloomFilter_LargeCapacity(t *testing.T) {
 	partitiontest.PartitionTest(t)
 
-	numElements := 10000
+	numElements := 75000
 	filter := createFastTXIDBloomFilter(numElements)
 
-	// Add a sample of transaction IDs
-	sampleSize := 1000
+	// Add transaction IDs
+	sampleSize := 75000
 	txids := make([]transactions.Txid, sampleSize)
 	for i := 0; i < sampleSize; i++ {
 		_, err := rand.Read(txids[i][:])
@@ -197,7 +197,7 @@ func TestFastTXIDBloomFilter_DeterministicBehavior(t *testing.T) {
 func TestFastTXIDBloomFilter_DifferentSizes(t *testing.T) {
 	partitiontest.PartitionTest(t)
 
-	sizes := []int{1, 10, 100, 1000, 10000}
+	sizes := []int{1, 10, 100, 1000, 10000, 100000}
 
 	for _, size := range sizes {
 		filter := createFastTXIDBloomFilter(size)

@@ -141,6 +141,7 @@ func (f *fastTXIDBloomFilter) Test(txid transactions.Txid) bool {
 			// If any bit is not set, the element is definitely not present
 			return false
 		}
+
 	}
 
 	// All bits are set, element might be present (could be false positive)
