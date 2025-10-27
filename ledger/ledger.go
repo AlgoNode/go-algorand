@@ -80,15 +80,16 @@ type Ledger struct {
 	genesisProtoVersion protocol.ConsensusVersion
 
 	// State-machine trackers
-	accts          accountUpdates
-	acctsOnline    onlineAccounts
-	catchpoint     catchpointTracker
-	txTail         txTail
-	bulletinDisk   bulletin
-	bulletinMem    bulletinMem
-	notifier       blockNotifier
-	metrics        metricsTracker
-	spVerification spVerificationTracker
+	accts            accountUpdates
+	acctsOnline      onlineAccounts
+	catchpoint       catchpointTracker
+	txTail           txTail
+	txidBloomFilters txidBloomFilter
+	bulletinDisk     bulletin
+	bulletinMem      bulletinMem
+	notifier         blockNotifier
+	metrics          metricsTracker
+	spVerification   spVerificationTracker
 
 	trackers  trackerRegistry
 	trackerMu deadlock.RWMutex
@@ -236,15 +237,16 @@ func (l *Ledger) reloadLedger() error {
 
 	// set account updates tracker as a driver to calculate tracker db round and committing offsets
 	trackers := []ledgerTracker{
-		&l.accts,          // update the balances
-		&l.catchpoint,     // catchpoints tracker : update catchpoint labels, create catchpoint files
-		&l.acctsOnline,    // update online account balances history
-		&l.txTail,         // update the transaction tail, tracking the recent 1000 txn
-		&l.bulletinDisk,   // provide closed channel signaling support for completed rounds on disk
-		&l.bulletinMem,    // provide closed channel signaling support for completed rounds in memory
-		&l.notifier,       // send OnNewBlocks to subscribers
-		&l.metrics,        // provides metrics reporting support
-		&l.spVerification, // provides state proof verification support
+		&l.accts,            // update the balances
+		&l.catchpoint,       // catchpoints tracker : update catchpoint labels, create catchpoint files
+		&l.acctsOnline,      // update online account balances history
+		&l.txTail,           // update the transaction tail, tracking the recent 1000 txn
+		&l.txidBloomFilters, // maintain bloom filters for transaction IDs for recent MaxTxnLife rounds
+		&l.bulletinDisk,     // provide closed channel signaling support for completed rounds on disk
+		&l.bulletinMem,      // provide closed channel signaling support for completed rounds in memory
+		&l.notifier,         // send OnNewBlocks to subscribers
+		&l.metrics,          // provides metrics reporting support
+		&l.spVerification,   // provides state proof verification support
 	}
 
 	l.accts.initialize(l.cfg)
@@ -756,6 +758,11 @@ func (l *Ledger) LatestCommitted() (basics.Round, basics.Round) {
 // Block returns the block for round rnd.
 func (l *Ledger) Block(rnd basics.Round) (blk bookkeeping.Block, err error) {
 	return l.blockQ.getBlock(rnd)
+}
+
+// Test if TXID might exists in the last maxTxnLife rounds
+func (l *Ledger) TXIDMightExist(txid transactions.Txid, rnd basics.Round) bool {
+	return l.txidBloomFilters.TXIDMightExistsInBlock(txid, rnd)
 }
 
 // BlockHdr returns the BlockHeader of the block for round rnd.
