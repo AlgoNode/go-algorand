@@ -214,19 +214,23 @@ func (t *txidBloomFilter) loadFromDisk(l ledgerForTracker, dbRound basics.Round)
 	t.lowestRound = startRound
 
 	start := time.Now()
+	if latestRound == 0 {
+		// no rounds to load yet
+		return nil
+	}
 	t.log.Infof("Loading rounds %d..%d",
 		startRound, latestRound)
 
 	for rnd := latestRound; rnd >= startRound; rnd-- {
 		blk, err := l.Block(rnd)
 		if err != nil {
-			t.log.Warnf("Filed to load round %d", rnd)
-			return err
+			t.log.Warnf("Filed to load round %d, skipping bloom preload", rnd)
+			return nil
 		}
 		filter, err := t.buildTXFilter(blk)
 		if err != nil {
-			t.log.Warnf("Filed to parse round %d", rnd)
-			return err
+			t.log.Warnf("Filed to parse round %d, skipping bloom preload", rnd)
+			return nil
 		}
 		t.filters[rnd] = filter
 	}
@@ -342,7 +346,7 @@ func (t *txidBloomFilter) close() {
 // Test checks if a transaction ID might exist in any of the maintained bloom filters.
 // Returns true if the txid might be present (with possible false positives)
 // or false if definitely not present.
-func (t *txidBloomFilter) TXIDMightExistsInBlock(txid transactions.Txid, rnd basics.Round) bool {
+func (t *txidBloomFilter) TXIDMaybeExistsInBlock(txid transactions.Txid, rnd basics.Round) bool {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
@@ -351,6 +355,7 @@ func (t *txidBloomFilter) TXIDMightExistsInBlock(txid transactions.Txid, rnd bas
 	if !ok || filter == nil {
 		// No bloom filter for this round
 		// Return "might be present" as we have no data to confirm otherwise
+		t.log.Debugf("Bloom filter missing for round %d", rnd)
 		return true
 	}
 

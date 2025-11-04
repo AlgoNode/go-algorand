@@ -762,7 +762,7 @@ func (l *Ledger) Block(rnd basics.Round) (blk bookkeeping.Block, err error) {
 
 // Test if TXID might exists in the last maxTxnLife rounds
 func (l *Ledger) TXIDMightExist(txid transactions.Txid, rnd basics.Round) bool {
-	return l.txidBloomFilters.TXIDMightExistsInBlock(txid, rnd)
+	return l.txidBloomFilters.TXIDMaybeExistsInBlock(txid, rnd)
 }
 
 // BlockHdr returns the BlockHeader of the block for round rnd.
