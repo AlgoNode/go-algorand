@@ -20,6 +20,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -373,6 +374,11 @@ func (l *Ledger) setSynchronousMode(ctx context.Context, synchronousMode db.Sync
 	}
 }
 
+func externalArchiveSettings() (url string, enabled bool) {
+	url = os.Getenv("EXTERNAL_ARCHIVE_URL")
+	return url, url != ""
+}
+
 // initBlocksDB performs DB initialization:
 // - creates and populates it with genesis blocks
 // - ensures DB is in good shape for archival mode and resets it if not
@@ -394,6 +400,13 @@ func initBlocksDB(tx *sql.Tx, log logging.Logger, initBlocks []bookkeeping.Block
 		// Detect possible problem - archival node needs all block but have only subsequence of them
 		// So reset the DB and init it again
 		if earliest != basics.Round(0) {
+
+			_, externalArchivalEnabled := externalArchiveSettings()
+			if externalArchivalEnabled {
+				log.Info("skipping block init check in external archival mode")
+				return nil
+			}
+
 			log.Warnf("resetting blocks DB (earliest block is %v)", earliest)
 			err := blockdb.BlockResetDB(tx)
 			if err != nil {
@@ -473,7 +486,9 @@ func (l *Ledger) notifyCommit(r basics.Round) basics.Round {
 		minToSave = configuredMinToSave
 	}
 
-	if l.archival {
+	_, externalArchivalEnabled := externalArchiveSettings()
+
+	if l.archival && !externalArchivalEnabled {
 		// Do not forget any blocks.
 		minToSave = 0
 	} else {

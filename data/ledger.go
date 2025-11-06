@@ -142,11 +142,11 @@ func (l *Ledger) TxnsFrom(id basics.Address, r basics.Round) ([]transactions.Tra
 func (l *Ledger) LookupTxid(txid transactions.Txid, r basics.Round) (stxn transactions.SignedTxnWithAD, found bool, err error) {
 	var blk bookkeeping.Block
 
-	// skip parsing a block if TXID if bloom filter reports a 100% miss
-	if maybeExist := l.TXIDMightExist(txid, r); !maybeExist {
+	// avoid loading and parsing a block if bloom filter with TXIDs already exists for it
+	if mightExist := l.TXIDMightExist(txid, r); !mightExist {
 		return transactions.SignedTxnWithAD{}, false, err
 	}
-	l.log.Debugf("TXID:%s mightExistIn:%d", txid.String(), r)
+
 	blk, err = l.Block(r)
 	if err != nil {
 		return transactions.SignedTxnWithAD{}, false, err
