@@ -18,10 +18,18 @@ package ledger
 
 import (
 	"crypto/rand"
+	"fmt"
 	"testing"
 
+	"github.com/algorand/go-algorand/agreement"
+	"github.com/algorand/go-algorand/config"
 	"github.com/algorand/go-algorand/crypto"
+	"github.com/algorand/go-algorand/data/basics"
+	"github.com/algorand/go-algorand/data/bookkeeping"
 	"github.com/algorand/go-algorand/data/transactions"
+	ledgertesting "github.com/algorand/go-algorand/ledger/testing"
+	"github.com/algorand/go-algorand/logging"
+	"github.com/algorand/go-algorand/protocol"
 	"github.com/algorand/go-algorand/test/partitiontest"
 	"github.com/stretchr/testify/require"
 )
@@ -302,4 +310,115 @@ func BenchmarkFastTXIDBloomFilter_AddAndTest(b *testing.B) {
 		filter.Add(txid)
 		_ = filter.Test(txid)
 	}
+}
+
+func BenchmarkInsertionWithBloomFilter(b *testing.B) {
+	benchmarkInsertion(b, true /*enableBloom*/)
+}
+
+func BenchmarkInsertionWithoutBloomFilter(b *testing.B) {
+	benchmarkInsertion(b, false /*enableBloom*/)
+}
+
+// benchmarkInsertion is a helper function to measure the performance of TXID bloom filters.
+func benchmarkInsertion(b *testing.B, enableBloom bool) {
+
+	// set up ledger config
+	cfg := config.GetDefaultLocal()
+	cfg.Archival = true
+
+	// set up genesis state
+	genesisInitState, initKeys := ledgertesting.GenerateInitState(b, protocol.ConsensusCurrentVersion, 100)
+
+	// set up logger
+	log := logging.TestingLog(b)
+	log.SetLevel(logging.Warn)
+
+	// set up ledger
+	cfg.EnableTxidBloomFilter = enableBloom
+	l, err := OpenLedger(log, b.Name() /* inMem */, true, genesisInitState, cfg)
+	require.NoError(b, err, "could not open ledger")
+	defer l.Close()
+
+	// collect genesis addresses into a slice
+	var addresses []basics.Address
+	for addr := range genesisInitState.Accounts {
+		if addr != testPoolAddr && addr != testSinkAddr {
+			addresses = append(addresses, addr)
+		}
+	}
+
+	// create several blocks with payment transactions
+	const numBlocks = basics.Round(10)
+	var blks []bookkeeping.Block
+	for i := range numBlocks {
+		numTransactions := 256
+		stxns := make([]transactions.SignedTxn, numTransactions)
+		for j := 0; j < numTransactions; j++ {
+			txHeader := transactions.Header{
+				Sender:      addresses[0],
+				Fee:         basics.MicroAlgos{Raw: 1000},
+				FirstValid:  l.Latest() + 1,
+				LastValid:   l.Latest() + 10,
+				GenesisID:   b.Name(),
+				GenesisHash: crypto.Hash([]byte(b.Name())),
+				Note:        []byte{uint8(j)},
+			}
+
+			payment := transactions.PaymentTxnFields{
+				Receiver: addresses[0],
+				Amount:   basics.MicroAlgos{Raw: uint64(i)},
+			}
+
+			tx := transactions.Transaction{
+				Type:             protocol.PaymentTx,
+				Header:           txHeader,
+				PaymentTxnFields: payment,
+			}
+			stxns[j] = sign(initKeys, tx)
+		}
+		blk, err := l.makePaymentBlock(b, genesisInitState.Accounts, stxns, transactions.ApplyData{})
+		blk.BlockHeader.Round = i + 1
+		require.NoError(b, err)
+		blks = append(blks, blk)
+	}
+
+	// measure the time it takes to insert all blocks into the ledger
+	for b.Loop() {
+		for _, blk := range blks {
+			l.AddBlock(blk, agreement.Certificate{})
+		}
+	}
+
+	// sanity check
+	require.Equal(b, numBlocks, l.Latest())
+}
+
+func (l *Ledger) makePaymentBlock(
+	t testing.TB,
+	accounts map[basics.Address]basics.AccountData,
+	stxns []transactions.SignedTxn,
+	ad transactions.ApplyData,
+) (bookkeeping.Block, error) {
+
+	// create a new empty block
+	blk := makeNewEmptyBlock(t, l, t.Name(), accounts)
+	proto := config.Consensus[blk.CurrentProtocol]
+
+	// encode and add all transactions to the block
+	for _, stx := range stxns {
+		txib, err := blk.EncodeSignedTxn(stx, ad)
+		if err != nil {
+			return bookkeeping.Block{}, fmt.Errorf("could not sign txn: %s", err.Error())
+		}
+		if proto.TxnCounter {
+			blk.TxnCounter = blk.TxnCounter + 1
+		}
+		blk.Payset = append(blk.Payset, txib)
+	}
+
+	var err error
+	blk.TxnCommitments, err = blk.PaysetCommit()
+	require.NoError(t, err)
+	return blk, nil
 }

@@ -238,16 +238,19 @@ func (l *Ledger) reloadLedger() error {
 
 	// set account updates tracker as a driver to calculate tracker db round and committing offsets
 	trackers := []ledgerTracker{
-		&l.accts,            // update the balances
-		&l.catchpoint,       // catchpoints tracker : update catchpoint labels, create catchpoint files
-		&l.acctsOnline,      // update online account balances history
-		&l.txTail,           // update the transaction tail, tracking the recent 1000 txn
-		&l.txidBloomFilters, // maintain bloom filters for transaction IDs for recent MaxTxnLife rounds
-		&l.bulletinDisk,     // provide closed channel signaling support for completed rounds on disk
-		&l.bulletinMem,      // provide closed channel signaling support for completed rounds in memory
-		&l.notifier,         // send OnNewBlocks to subscribers
-		&l.metrics,          // provides metrics reporting support
-		&l.spVerification,   // provides state proof verification support
+		&l.accts,          // update the balances
+		&l.catchpoint,     // catchpoints tracker : update catchpoint labels, create catchpoint files
+		&l.acctsOnline,    // update online account balances history
+		&l.txTail,         // update the transaction tail, tracking the recent 1000 txn
+		&l.bulletinDisk,   // provide closed channel signaling support for completed rounds on disk
+		&l.bulletinMem,    // provide closed channel signaling support for completed rounds in memory
+		&l.notifier,       // send OnNewBlocks to subscribers
+		&l.metrics,        // provides metrics reporting support
+		&l.spVerification, // provides state proof verification support
+	}
+	if l.cfg.EnableTxidBloomFilter {
+		// maintain bloom filters for transaction IDs for recent MaxTxnLife rounds
+		trackers = append(trackers, &l.txidBloomFilters)
 	}
 
 	l.accts.initialize(l.cfg)
@@ -777,7 +780,10 @@ func (l *Ledger) Block(rnd basics.Round) (blk bookkeeping.Block, err error) {
 
 // Test if TXID might exists in the last maxTxnLife rounds
 func (l *Ledger) TXIDMightExist(txid transactions.Txid, rnd basics.Round) bool {
-	return l.txidBloomFilters.TXIDMaybeExistsInBlock(txid, rnd)
+	if l.cfg.EnableTxidBloomFilter {
+		return l.txidBloomFilters.TXIDMaybeExistsInBlock(txid, rnd)
+	}
+	return true
 }
 
 // BlockHdr returns the BlockHeader of the block for round rnd.

@@ -119,7 +119,7 @@ func endOfBlock(blk *bookkeeping.Block) error {
 	return err
 }
 
-func makeNewEmptyBlock(t *testing.T, l *Ledger, GenesisID string, initAccounts map[basics.Address]basics.AccountData) (blk bookkeeping.Block) {
+func makeNewEmptyBlock(t testing.TB, l *Ledger, GenesisID string, initAccounts map[basics.Address]basics.AccountData) (blk bookkeeping.Block) {
 	a := require.New(t)
 
 	lastBlock, err := l.Block(l.Latest())
@@ -205,7 +205,7 @@ func (l *Ledger) appendUnvalidatedSignedTx(t *testing.T, initAccounts map[basics
 	return l.appendUnvalidated(blk)
 }
 
-func (l *Ledger) addBlockTxns(t *testing.T, accounts map[basics.Address]basics.AccountData, stxns []transactions.SignedTxn, ad transactions.ApplyData) error {
+func (l *Ledger) addBlockTxns(t testing.TB, accounts map[basics.Address]basics.AccountData, stxns []transactions.SignedTxn, ad transactions.ApplyData) error {
 	blk := makeNewEmptyBlock(t, l, t.Name(), accounts)
 	proto := config.Consensus[blk.CurrentProtocol]
 	for _, stx := range stxns {
