@@ -737,15 +737,15 @@ func getEmptyBlock(afterRound basics.Round, l *ledger.Ledger, genesisID string, 
 	return
 }
 
-func BenchmarkReadsWithBloomFilter(b *testing.B) {
-	benchmarkTxidBloomFilterReads(b, true /*enableBloom*/)
+func BenchmarkReadMissWithBloomFilter(b *testing.B) {
+	benchmarkTxidBloomFilterReadMiss(b, true /*enableBloom*/)
 }
 
-func BenchmarkReadsWithoutBloomFilter(b *testing.B) {
-	benchmarkTxidBloomFilterReads(b, false /*enableBloom*/)
+func BenchmarkReadMissWithoutBloomFilter(b *testing.B) {
+	benchmarkTxidBloomFilterReadMiss(b, false /*enableBloom*/)
 }
 
-func benchmarkTxidBloomFilterReads(b *testing.B, enableBloom bool) {
+func benchmarkTxidBloomFilterReadMiss(b *testing.B, enableBloom bool) {
 
 	// Set up the test ledger
 	proto := protocol.ConsensusCurrentVersion
