@@ -736,3 +736,91 @@ func getEmptyBlock(afterRound basics.Round, l *ledger.Ledger, genesisID string, 
 	}
 	return
 }
+
+func BenchmarkReadsWithBloomFilter(b *testing.B) {
+	benchmarkTxidBloomFilterReads(b, true /*enableBloom*/)
+}
+
+func BenchmarkReadsWithoutBloomFilter(b *testing.B) {
+	benchmarkTxidBloomFilterReads(b, false /*enableBloom*/)
+}
+
+func benchmarkTxidBloomFilterReads(b *testing.B, enableBloom bool) {
+
+	// Set up the test ledger
+	proto := protocol.ConsensusCurrentVersion
+	genesisInitState, keys := testGenerateInitState(b, proto)
+
+	const inMem = true
+	cfg := config.GetDefaultLocal()
+	cfg.Archival = true
+	cfg.EnableTxidBloomFilter = enableBloom
+	log := logging.TestingLog(b)
+	log.SetLevel(logging.Warn)
+	realLedger, err := ledger.OpenLedger(log, b.Name(), inMem, genesisInitState, cfg)
+	require.NoError(b, err, "could not open ledger")
+	defer realLedger.Close()
+
+	l := Ledger{Ledger: realLedger}
+	require.NotNil(b, &l)
+
+	// Initialize data that will be used for generating every block
+	var sourceAccount basics.Address
+	var destAccount basics.Address
+	for addr, acctData := range genesisInitState.Accounts {
+		if addr == testPoolAddr || addr == testSinkAddr {
+			continue
+		}
+		if acctData.Status == basics.Online {
+			sourceAccount = addr
+			break
+		}
+	}
+	for addr, acctData := range genesisInitState.Accounts {
+		if addr == testPoolAddr || addr == testSinkAddr {
+			continue
+		}
+		if acctData.Status == basics.NotParticipating {
+			destAccount = addr
+			break
+		}
+	}
+	require.False(b, sourceAccount.IsZero())
+	require.False(b, destAccount.IsZero())
+
+	blk := genesisInitState.Block
+	totalsRound, _, err := realLedger.LatestTotals()
+	require.NoError(b, err)
+	require.Equal(b, basics.Round(0), totalsRound)
+
+	srcAccountKey := keys[sourceAccount]
+	require.NotNil(b, srcAccountKey)
+
+	// Ingest some blocks
+	for rnd := basics.Round(1); rnd < basics.Round(600); rnd++ {
+		blk.BlockHeader.Round++
+		blk.BlockHeader.TimeStamp += int64(crypto.RandUint64() % 100 * 1000)
+		var tx transactions.Transaction
+		tx.Sender = sourceAccount
+		tx.Fee = basics.MicroAlgos{Raw: 10000}
+		tx.FirstValid = rnd - 1
+		tx.LastValid = tx.FirstValid + 999
+		tx.Receiver = destAccount
+		tx.Amount = basics.MicroAlgos{Raw: 1}
+		tx.Type = protocol.PaymentTx
+		signedTx := tx.Sign(srcAccountKey)
+		blk.Payset = transactions.Payset{transactions.SignedTxnInBlock{
+			SignedTxnWithAD: transactions.SignedTxnWithAD{
+				SignedTxn: signedTx,
+			},
+		}}
+		require.NoError(b, l.AddBlock(blk, agreement.Certificate{}))
+		l.WaitForCommit(rnd)
+	}
+
+	// Measure the lookup of a non-existing transaction.
+	// This should be faster when enabling the TXID bloom filter.
+	for b.Loop() {
+		l.LookupTxid(transactions.Txid{}, l.LastRound())
+	}
+}
