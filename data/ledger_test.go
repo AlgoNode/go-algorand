@@ -820,19 +820,21 @@ func benchmarkTxidBloomFilterReadMiss(b *testing.B, enableBloom bool) {
 
 	// Measure the lookup of a non-existing transaction.
 	// This should be faster when enabling the TXID bloom filter.
+	b.ResetTimer()
 	for b.Loop() {
 		_, found, err := l.LookupTxid(transactions.Txid{}, l.LastRound())
 		require.NoError(b, err)
 		require.False(b, found)
 	}
+	b.StopTimer()
 }
 
 func BenchmarkReadHitWithBloomFilter(b *testing.B) {
-	benchmarkTxidBloomFilterReadMiss(b, true /*enableBloom*/)
+	benchmarkTxidBloomFilterReadHit(b, true /*enableBloom*/)
 }
 
 func BenchmarkReadHitWithoutBloomFilter(b *testing.B) {
-	benchmarkTxidBloomFilterReadMiss(b, false /*enableBloom*/)
+	benchmarkTxidBloomFilterReadHit(b, false /*enableBloom*/)
 }
 
 func benchmarkTxidBloomFilterReadHit(b *testing.B, enableBloom bool) {
@@ -887,7 +889,6 @@ func benchmarkTxidBloomFilterReadHit(b *testing.B, enableBloom bool) {
 	require.NotNil(b, srcAccountKey)
 
 	// Ingest some blocks
-	var lastID transactions.Txid
 	for rnd := basics.Round(1); rnd < basics.Round(600); rnd++ {
 		blk.BlockHeader.Round++
 		blk.BlockHeader.TimeStamp += int64(crypto.RandUint64() % 100 * 1000)
@@ -900,7 +901,6 @@ func benchmarkTxidBloomFilterReadHit(b *testing.B, enableBloom bool) {
 		tx.Amount = basics.MicroAlgos{Raw: 1}
 		tx.Type = protocol.PaymentTx
 		signedTx := tx.Sign(srcAccountKey)
-		lastID = signedTx.ID()
 		blk.Payset = transactions.Payset{transactions.SignedTxnInBlock{
 			SignedTxnWithAD: transactions.SignedTxnWithAD{
 				SignedTxn: signedTx,
@@ -912,9 +912,16 @@ func benchmarkTxidBloomFilterReadHit(b *testing.B, enableBloom bool) {
 
 	// Measure the lookup of an existing transaction.
 	// This should be slower when enabling the TXID bloom filter, but hopefully not a significant slowdown.
+	blk, err = l.Block(599)
+	require.NoError(b, err)
+	payset, err := blk.DecodePaysetFlat()
+	require.NoError(b, err)
+	lastID := payset[0].ID()
+	b.ResetTimer()
 	for b.Loop() {
-		_, found, err := l.LookupTxid(lastID, l.LastRound())
+		_, found, err := l.LookupTxid(lastID, 599)
 		require.NoError(b, err)
 		require.True(b, found)
 	}
+	b.StopTimer()
 }
