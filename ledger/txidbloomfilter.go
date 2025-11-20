@@ -283,26 +283,18 @@ func (t *txidBloomFilter) committedUpTo(committedRound basics.Round) (minRound, 
 	defer t.mu.Unlock()
 
 	// Calculate the oldest round we need to keep
-	// We need to keep MaxTxnLife rounds
-	minRound = committedRound.SubSaturate(basics.Round(t.maxTxnLife))
+	// We want to keep MaxTxnLife + 1 rounds
+	minBloomRound := committedRound.SubSaturate(basics.Round(t.maxTxnLife) + 1)
 
 	// Remove bloom filters for rounds older than minRound
 	for rnd := range t.filters {
-		if rnd < minRound {
+		if rnd < minBloomRound {
 			delete(t.filters, rnd)
 			t.log.Debugf("Removed bloom filter for round %d", rnd)
 		}
 	}
 
-	// Update lowestRound to reflect the oldest bloom filter we still have
-	if minRound > t.lowestRound {
-		t.lowestRound = minRound
-	}
-
-	// Return the lookback value (MaxTxnLife rounds)
-	lookback = basics.Round(t.maxTxnLife)
-
-	return minRound, lookback
+	return committedRound, basics.Round(0)
 }
 
 // produceCommittingTask is called to prepare data for committing to the database.
