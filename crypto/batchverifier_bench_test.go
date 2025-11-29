@@ -44,7 +44,7 @@ func randSignedMsg(t testing.TB, r io.Reader) (SignatureVerifier, Hashable, Sign
 func BenchmarkBatchVerifierImpls(b *testing.B) {
 	partitiontest.PartitionTest(b)
 
-	numBatches := 100
+	numBatches := 1
 	batchSize := 64
 	msgs := make([][]Hashable, numBatches)
 	pks := make([][]SignatureVerifier, numBatches)

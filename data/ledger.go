@@ -141,6 +141,12 @@ func (l *Ledger) TxnsFrom(id basics.Address, r basics.Round) ([]transactions.Tra
 // LookupTxid returns the transaction with a given ID in a specific round
 func (l *Ledger) LookupTxid(txid transactions.Txid, r basics.Round) (stxn transactions.SignedTxnWithAD, found bool, err error) {
 	var blk bookkeeping.Block
+
+	// avoid loading and parsing a block if bloom filter with TXIDs already exists for it
+	if mightExist := l.TXIDMightExist(txid, r); !mightExist {
+		return transactions.SignedTxnWithAD{}, false, err
+	}
+
 	blk, err = l.Block(r)
 	if err != nil {
 		return transactions.SignedTxnWithAD{}, false, err
