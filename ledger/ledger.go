@@ -80,15 +80,16 @@ type Ledger struct {
 	genesisProtoVersion protocol.ConsensusVersion
 
 	// State-machine trackers
-	accts          accountUpdates
-	acctsOnline    onlineAccounts
-	catchpoint     catchpointTracker
-	txTail         txTail
-	bulletinDisk   bulletin
-	bulletinMem    bulletinMem
-	notifier       blockNotifier
-	metrics        metricsTracker
-	spVerification spVerificationTracker
+	accts            accountUpdates
+	acctsOnline      onlineAccounts
+	catchpoint       catchpointTracker
+	txTail           txTail
+	txidBloomFilters txidBloomFilter
+	bulletinDisk     bulletin
+	bulletinMem      bulletinMem
+	notifier         blockNotifier
+	metrics          metricsTracker
+	spVerification   spVerificationTracker
 
 	trackers  trackerRegistry
 	trackerMu deadlock.RWMutex
@@ -245,6 +246,10 @@ func (l *Ledger) reloadLedger() error {
 		&l.notifier,       // send OnNewBlocks to subscribers
 		&l.metrics,        // provides metrics reporting support
 		&l.spVerification, // provides state proof verification support
+	}
+	if l.cfg.EnableTxidBloomFilter {
+		// maintain bloom filters for transaction IDs for recent MaxTxnLife rounds
+		trackers = append(trackers, &l.txidBloomFilters)
 	}
 
 	l.accts.initialize(l.cfg)
@@ -756,6 +761,14 @@ func (l *Ledger) LatestCommitted() (basics.Round, basics.Round) {
 // Block returns the block for round rnd.
 func (l *Ledger) Block(rnd basics.Round) (blk bookkeeping.Block, err error) {
 	return l.blockQ.getBlock(rnd)
+}
+
+// Test if TXID might exists in the last maxTxnLife rounds
+func (l *Ledger) TXIDMightExist(txid transactions.Txid, rnd basics.Round) bool {
+	if l.cfg.EnableTxidBloomFilter {
+		return l.txidBloomFilters.TXIDMaybeExistsInBlock(txid, rnd)
+	}
+	return true
 }
 
 // BlockHdr returns the BlockHeader of the block for round rnd.

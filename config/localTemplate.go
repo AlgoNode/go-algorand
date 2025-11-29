@@ -657,6 +657,9 @@ type Local struct {
 
 	// EnableBatchVerification controls whether ed25519 batch verification is enabled
 	EnableBatchVerification bool `version[37]:"true"`
+
+	// EnableTxidBloomFilter controls whether bloom filters are used to keep track of recent transaction IDs in the ledger.
+	EnableTxidBloomFilter bool `version[37]:"false"`
 }
 
 // DNSBootstrapArray returns an array of one or more DNS Bootstrap identifiers
