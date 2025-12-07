@@ -2329,6 +2329,27 @@
         ],
         "type": "object"
       },
+      "SetLogLevelParams": {
+        "description": "Parameters for SetLogLevel.",
+        "properties": {
+          "log-level": {
+            "description": "Log level to set.",
+            "enum": [
+              "panic",
+              "fatal",
+              "error",
+              "warn",
+              "info",
+              "debug"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "log-level"
+        ],
+        "type": "object"
+      },
       "SimulateInitialStates": {
         "description": "Initial states of resources that were accessed during simulation.",
         "properties": {
@@ -5771,6 +5792,48 @@
           "public",
           "data"
         ]
+      }
+    },
+    "/v2/node/log-level": {
+      "post": {
+        "description": "Set the node log level",
+        "operationId": "SetLogLevel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetLogLevelParams"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "tags": [
+          "private",
+          "nonparticipating"
+        ],
+        "x-codegen-request-body-name": "SetLogLevelParams"
       }
     },
     "/v2/participation": {

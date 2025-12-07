@@ -21,6 +21,16 @@ const (
 	AccountSigTypeSig  AccountSigType = "sig"
 )
 
+// Defines values for SetLogLevelParamsLogLevel.
+const (
+	SetLogLevelParamsLogLevelDebug SetLogLevelParamsLogLevel = "debug"
+	SetLogLevelParamsLogLevelError SetLogLevelParamsLogLevel = "error"
+	SetLogLevelParamsLogLevelFatal SetLogLevelParamsLogLevel = "fatal"
+	SetLogLevelParamsLogLevelInfo  SetLogLevelParamsLogLevel = "info"
+	SetLogLevelParamsLogLevelPanic SetLogLevelParamsLogLevel = "panic"
+	SetLogLevelParamsLogLevelWarn  SetLogLevelParamsLogLevel = "warn"
+)
+
 // Defines values for TransactionProofHashtype.
 const (
 	TransactionProofHashtypeSha256    TransactionProofHashtype = "sha256"
@@ -793,6 +803,15 @@ type ScratchChange struct {
 	// Slot The scratch slot written.
 	Slot int `json:"slot"`
 }
+
+// SetLogLevelParams Parameters for SetLogLevel.
+type SetLogLevelParams struct {
+	// LogLevel Log level to set.
+	LogLevel SetLogLevelParamsLogLevel `json:"log-level"`
+}
+
+// SetLogLevelParamsLogLevel Log level to set.
+type SetLogLevelParamsLogLevel string
 
 // SimulateInitialStates Initial states of resources that were accessed during simulation.
 type SimulateInitialStates struct {
@@ -1625,6 +1644,9 @@ type SimulateTransactionParams struct {
 
 // SimulateTransactionParamsFormat defines parameters for SimulateTransaction.
 type SimulateTransactionParamsFormat string
+
+// SetLogLevelJSONRequestBody defines body for SetLogLevel for application/json ContentType.
+type SetLogLevelJSONRequestBody = SetLogLevelParams
 
 // TealCompileTextRequestBody defines body for TealCompile for text/plain ContentType.
 type TealCompileTextRequestBody = TealCompileTextBody

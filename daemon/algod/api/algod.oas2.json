@@ -1021,6 +1021,36 @@
         }
       ]
     },
+    "/v2/node/log-level": {
+      "post": {
+        "description": "Set the node log level",
+        "tags": ["private", "nonparticipating"],
+        "consumes": "application/json",
+        "operationId": "SetLogLevel",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "SetLogLevelParams",
+            "schema": {
+              "$ref": "#/definitions/SetLogLevelParams"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
     "/v2/shutdown": {
       "post": {
         "description": "Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.",
@@ -3797,6 +3827,18 @@
         },
         "new-value": {
           "$ref": "#/definitions/AvmValue"
+        }
+      }
+    },
+    "SetLogLevelParams": {
+      "description": "Parameters for SetLogLevel.",
+      "type": "object",
+      "required": ["log-level"],
+      "properties": {
+        "log-level": {
+          "description": "Log level to set.",
+          "type": "string",
+          "enum": ["panic", "fatal", "error", "warn", "info", "debug"]
         }
       }
     },
