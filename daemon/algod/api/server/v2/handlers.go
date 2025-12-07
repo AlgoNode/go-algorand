@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -68,6 +69,9 @@ import (
 // but we allow for comments, spacing, and repeated consts
 // in the source TEAL. We have some indication that real TEAL programs with comments are about 20 times bigger than the bytecode they produce, and we may soon allow 16,000 byte logicsigs, implying a maximum of 320kb. Let's call it half a meg for a little room to spare.
 const MaxTealSourceBytes = 512 * 1024
+
+// MaxSetLogLevelBodySize defines the maximum request body size for `POST /v2/node/log-level`
+const MaxSetLogLevelBodySize = 256
 
 // MaxTealDryrunBytes sets a size limit for dryrun requests
 // With the ability to hold unlimited assets DryrunRequests can
@@ -397,6 +401,49 @@ func (v2 *Handlers) AppendKeys(ctx echo.Context, participationID string) error {
 	if err != nil {
 		return internalError(ctx, err, err.Error(), v2.Log)
 	}
+	return nil
+}
+
+// SetLogLevel sets the node log level
+// (POST /v2/node/log-level)
+func (v2 *Handlers) SetLogLevel(ctx echo.Context) error {
+
+	// Read the whole request body
+	buf := new(bytes.Buffer)
+	ctx.Request().Body = http.MaxBytesReader(nil, ctx.Request().Body, MaxSetLogLevelBodySize)
+	_, err := buf.ReadFrom(ctx.Request().Body)
+	if err != nil {
+		return badRequest(ctx, err, err.Error(), v2.Log)
+	}
+
+	// Deserialize input parameters
+	var params model.SetLogLevelJSONRequestBody
+	err = json.Unmarshal(buf.Bytes(), &params)
+	if err != nil {
+		return badRequest(ctx, err, err.Error(), v2.Log)
+	}
+
+	// Convert the log level string into the associated enum
+	var l logging.Level
+	switch params.LogLevel {
+	case "panic":
+		l = logging.Panic
+	case "fatal":
+		l = logging.Fatal
+	case "error":
+		l = logging.Error
+	case "warn":
+		l = logging.Warn
+	case "info":
+		l = logging.Info
+	case "debug":
+		l = logging.Debug
+	default:
+		return badRequest(ctx, errors.New("invalid log level"), "invalid log level", v2.Log)
+	}
+
+	// Set the log level
+	v2.Log.SetLevel(l)
 	return nil
 }
 
