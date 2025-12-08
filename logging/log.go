@@ -72,6 +72,8 @@ const (
 	Info
 	// Debug Level level. Usually only enabled when debugging. Very verbose logging.
 	Debug
+	// Trace Level level. Designates finer-grained informational events than the Debug.
+	Trace
 )
 
 const stackPrefix = "[Stack]"
@@ -100,6 +102,11 @@ type Logger interface {
 	Debug(...interface{})
 	Debugln(...interface{})
 	Debugf(string, ...interface{})
+
+	// Trace logs a message at level Trace.
+	Trace(...interface{})
+	Traceln(...interface{})
+	Tracef(string, ...interface{})
 
 	// Info logs a message at level Info.
 	Info(...interface{})
@@ -195,6 +202,18 @@ func (l logger) Debugln(args ...interface{}) {
 
 func (l logger) Debugf(format string, args ...interface{}) {
 	l.source().Debugf(format, args...)
+}
+
+func (l logger) Trace(args ...interface{}) {
+	l.source().Trace(args...)
+}
+
+func (l logger) Traceln(args ...interface{}) {
+	l.source().Traceln(args...)
+}
+
+func (l logger) Tracef(format string, args ...interface{}) {
+	l.source().Tracef(format, args...)
 }
 
 func (l logger) Info(args ...interface{}) {
