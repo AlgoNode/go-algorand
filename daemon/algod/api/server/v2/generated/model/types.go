@@ -28,6 +28,7 @@ const (
 	SetLogLevelParamsLogLevelFatal SetLogLevelParamsLogLevel = "fatal"
 	SetLogLevelParamsLogLevelInfo  SetLogLevelParamsLogLevel = "info"
 	SetLogLevelParamsLogLevelPanic SetLogLevelParamsLogLevel = "panic"
+	SetLogLevelParamsLogLevelTrace SetLogLevelParamsLogLevel = "trace"
 	SetLogLevelParamsLogLevelWarn  SetLogLevelParamsLogLevel = "warn"
 )
 

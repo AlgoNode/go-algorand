@@ -2340,7 +2340,8 @@
               "error",
               "warn",
               "info",
-              "debug"
+              "debug",
+              "trace"
             ],
             "type": "string"
           }
