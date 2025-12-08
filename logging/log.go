@@ -292,7 +292,7 @@ func (l logger) WithFields(fields Fields) Logger {
 }
 
 func (l logger) GetLevel() (lvl Level) {
-	return Level(l.entry.Logger.Level)
+	return Level(l.entry.Logger.GetLevel())
 }
 
 func (l logger) SetLevel(lvl Level) {
