@@ -56,23 +56,23 @@ var (
 )
 
 const (
-	// Panic Level level, highest level of severity. Logs and then calls panic with the
+	// Panic level, highest level of severity. Logs and then calls panic with the
 	// message passed to Debug, Info, ...
 	Panic Level = iota
-	// Fatal Level level. Logs and then calls `os.Exit(1)`. It will exit even if the
+	// Fatal level. Logs and then calls `os.Exit(1)`. It will exit even if the
 	// logging level is set to Panic.
 	Fatal
-	// Error Level level. Used for errors that should definitely be noted.
+	// Error level. Used for errors that should definitely be noted.
 	// Commonly used for hooks to send errors to an error tracking service.
 	Error
-	// Warn Level level. Non-critical entries that deserve eyes.
+	// Warn level. Non-critical entries that deserve eyes.
 	Warn
-	// Info Level level. General operational entries about what's going on inside the
+	// Info level. General operational entries about what's going on inside the
 	// application.
 	Info
-	// Debug Level level. Usually only enabled when debugging. Very verbose logging.
+	// Debug level. Usually only enabled when debugging. Very verbose logging.
 	Debug
-	// Trace Level level. Designates finer-grained informational events than the Debug.
+	// Trace level. Designates finer-grained informational events than the Debug.
 	Trace
 )
 
