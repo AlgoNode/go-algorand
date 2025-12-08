@@ -443,6 +443,8 @@ func (v2 *Handlers) SetLogLevel(ctx echo.Context) error {
 	}
 
 	// Set the log level
+	//
+	// Note that for the underlying logger library (logrus), this operation is concurrency-safe.
 	v2.Log.SetLevel(l)
 	return nil
 }

@@ -296,7 +296,7 @@ func (l logger) GetLevel() (lvl Level) {
 }
 
 func (l logger) SetLevel(lvl Level) {
-	l.entry.Logger.Level = logrus.Level(lvl)
+	l.entry.Logger.SetLevel(logrus.Level(lvl))
 }
 
 func (l logger) IsLevelEnabled(level Level) bool {
