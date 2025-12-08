@@ -3838,7 +3838,7 @@
         "log-level": {
           "description": "Log level to set.",
           "type": "string",
-          "enum": ["panic", "fatal", "error", "warn", "info", "debug"]
+          "enum": ["panic", "fatal", "error", "warn", "info", "debug", "trace"]
         }
       }
     },
