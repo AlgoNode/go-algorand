@@ -438,6 +438,8 @@ func (v2 *Handlers) SetLogLevel(ctx echo.Context) error {
 		l = logging.Info
 	case "debug":
 		l = logging.Debug
+	case "trace":
+		l = logging.Trace
 	default:
 		return badRequest(ctx, errors.New("invalid log level"), "invalid log level", v2.Log)
 	}
