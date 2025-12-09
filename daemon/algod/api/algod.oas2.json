@@ -3833,8 +3833,31 @@
     "SetLogLevelParams": {
       "description": "Parameters for SetLogLevel.",
       "type": "object",
-      "required": ["log-level"],
+      "required": [],
       "properties": {
+        "log-level": {
+          "description": "Log level to set.",
+          "type": "string",
+          "enum": ["panic", "fatal", "error", "warn", "info", "debug", "trace"]
+        },
+        "rules": {
+          "description": "Per-package log level rules",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LogLevelRule"
+          }
+        }
+      }
+    },
+    "LogLevelRule": {
+      "description": "TODO",
+      "type": "object",
+      "required": ["rule", "log-level"],
+      "properties": {
+        "rule": {
+          "description": "TODO",
+          "type": "string"
+        },
         "log-level": {
           "description": "Log level to set.",
           "type": "string",
