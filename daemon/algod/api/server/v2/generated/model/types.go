@@ -21,6 +21,17 @@ const (
 	AccountSigTypeSig  AccountSigType = "sig"
 )
 
+// Defines values for LogLevelRuleLogLevel.
+const (
+	LogLevelRuleLogLevelDebug LogLevelRuleLogLevel = "debug"
+	LogLevelRuleLogLevelError LogLevelRuleLogLevel = "error"
+	LogLevelRuleLogLevelFatal LogLevelRuleLogLevel = "fatal"
+	LogLevelRuleLogLevelInfo  LogLevelRuleLogLevel = "info"
+	LogLevelRuleLogLevelPanic LogLevelRuleLogLevel = "panic"
+	LogLevelRuleLogLevelTrace LogLevelRuleLogLevel = "trace"
+	LogLevelRuleLogLevelWarn  LogLevelRuleLogLevel = "warn"
+)
+
 // Defines values for SetLogLevelParamsLogLevel.
 const (
 	SetLogLevelParamsLogLevelDebug SetLogLevelParamsLogLevel = "debug"
@@ -724,6 +735,18 @@ type LightBlockHeaderProof struct {
 	Treedepth int `json:"treedepth"`
 }
 
+// LogLevelRule TODO
+type LogLevelRule struct {
+	// LogLevel Log level to set.
+	LogLevel LogLevelRuleLogLevel `json:"log-level"`
+
+	// Rule TODO
+	Rule string `json:"rule"`
+}
+
+// LogLevelRuleLogLevel Log level to set.
+type LogLevelRuleLogLevel string
+
 // ParticipationKey Represents a participation key used by the node.
 type ParticipationKey struct {
 	// Address Address the key was generated for.
@@ -808,7 +831,10 @@ type ScratchChange struct {
 // SetLogLevelParams Parameters for SetLogLevel.
 type SetLogLevelParams struct {
 	// LogLevel Log level to set.
-	LogLevel SetLogLevelParamsLogLevel `json:"log-level"`
+	LogLevel *SetLogLevelParamsLogLevel `json:"log-level,omitempty"`
+
+	// Rules Per-package log level rules
+	Rules *[]LogLevelRule `json:"rules,omitempty"`
 }
 
 // SetLogLevelParamsLogLevel Log level to set.

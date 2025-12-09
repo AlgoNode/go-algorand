@@ -2177,6 +2177,33 @@
         ],
         "type": "object"
       },
+      "LogLevelRule": {
+        "description": "TODO",
+        "properties": {
+          "log-level": {
+            "description": "Log level to set.",
+            "enum": [
+              "panic",
+              "fatal",
+              "error",
+              "warn",
+              "info",
+              "debug",
+              "trace"
+            ],
+            "type": "string"
+          },
+          "rule": {
+            "description": "TODO",
+            "type": "string"
+          }
+        },
+        "required": [
+          "log-level",
+          "rule"
+        ],
+        "type": "object"
+      },
       "ParticipationKey": {
         "description": "Represents a participation key used by the node.",
         "properties": {
@@ -2344,11 +2371,15 @@
               "trace"
             ],
             "type": "string"
+          },
+          "rules": {
+            "description": "Per-package log level rules",
+            "items": {
+              "$ref": "#/components/schemas/LogLevelRule"
+            },
+            "type": "array"
           }
         },
-        "required": [
-          "log-level"
-        ],
         "type": "object"
       },
       "SimulateInitialStates": {
