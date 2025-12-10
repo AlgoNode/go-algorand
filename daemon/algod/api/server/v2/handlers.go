@@ -62,6 +62,8 @@ import (
 	"github.com/algorand/go-algorand/rpcs"
 	"github.com/algorand/go-algorand/stateproof"
 	"github.com/algorand/go-algorand/util"
+
+	golog "github.com/ipfs/go-log/v2"
 )
 
 // MaxTealSourceBytes sets a size limit for TEAL source programs for requests
@@ -423,31 +425,63 @@ func (v2 *Handlers) SetLogLevel(ctx echo.Context) error {
 		return badRequest(ctx, err, err.Error(), v2.Log)
 	}
 
-	// Convert the log level string into the associated enum
-	var l logging.Level
-	switch params.LogLevel {
-	case "panic":
-		l = logging.Panic
-	case "fatal":
-		l = logging.Fatal
-	case "error":
-		l = logging.Error
-	case "warn":
-		l = logging.Warn
-	case "info":
-		l = logging.Info
-	case "debug":
-		l = logging.Debug
-	case "trace":
-		l = logging.Trace
-	default:
-		return badRequest(ctx, errors.New("invalid log level"), "invalid log level", v2.Log)
+	// An empty mask resets all log levels
+	if params.Mask == nil || len(*params.Mask) == 0 {
+		v2.Log.SetLevel(logging.Level(v2.Node.Config().BaseLoggerDebugLevel))
+		golog.SetAllLoggers(golog.LevelWarn)
+		return nil
 	}
 
-	// Set the log level
-	//
-	// Note that for the underlying logger library (logrus), this operation is concurrency-safe.
-	v2.Log.SetLevel(l)
+	// Process every item in the mask
+	for _, pair := range *params.Mask {
+		switch pair.Subsystem {
+		case model.LogLevelRuleSubsystemMain:
+			var l logging.Level
+			switch pair.LogLevel {
+			case "panic":
+				l = logging.Panic
+			case "fatal":
+				l = logging.Fatal
+			case "error":
+				l = logging.Error
+			case "warn":
+				l = logging.Warn
+			case "info":
+				l = logging.Info
+			case "debug":
+				l = logging.Debug
+			case "trace":
+				l = logging.Trace
+			default:
+				return badRequest(ctx, errors.New("invalid log level"), "invalid log level", v2.Log)
+			}
+			v2.Log.SetLevel(l)
+		case model.LogLevelRuleSubsystemLibp2p:
+			var l golog.LogLevel
+			switch pair.LogLevel {
+			case "panic":
+				l = golog.LevelDPanic
+			case "fatal":
+				l = golog.LevelFatal
+			case "error":
+				l = golog.LevelError
+			case "warn":
+				l = golog.LevelWarn
+			case "info":
+				l = golog.LevelInfo
+			case "debug":
+				l = golog.LevelDebug
+			case "trace":
+				l = golog.LevelDebug
+			default:
+				return badRequest(ctx, errors.New("invalid log level"), "invalid log level", v2.Log)
+			}
+			golog.SetAllLoggers(l)
+		default:
+			return badRequest(ctx, errors.New("invalid subsystem"), "invalid subsystem", v2.Log)
+		}
+	}
+
 	return nil
 }
 
