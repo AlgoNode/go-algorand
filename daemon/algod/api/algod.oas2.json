@@ -3835,13 +3835,8 @@
       "type": "object",
       "required": [],
       "properties": {
-        "log-level": {
-          "description": "Log level to set.",
-          "type": "string",
-          "enum": ["panic", "fatal", "error", "warn", "info", "debug", "trace"]
-        },
-        "rules": {
-          "description": "Per-package log level rules",
+        "mask": {
+          "description": "Per-subsystem log level rules",
           "type": "array",
           "items": {
             "$ref": "#/definitions/LogLevelRule"
@@ -3852,11 +3847,12 @@
     "LogLevelRule": {
       "description": "TODO",
       "type": "object",
-      "required": ["rule", "log-level"],
+      "required": ["subsystem", "log-level"],
       "properties": {
-        "rule": {
+        "subsystem": {
           "description": "TODO",
-          "type": "string"
+          "type": "string",
+          "enum": ["main", "libp2p"]
         },
         "log-level": {
           "description": "Log level to set.",
