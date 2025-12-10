@@ -32,15 +32,10 @@ const (
 	LogLevelRuleLogLevelWarn  LogLevelRuleLogLevel = "warn"
 )
 
-// Defines values for SetLogLevelParamsLogLevel.
+// Defines values for LogLevelRuleSubsystem.
 const (
-	SetLogLevelParamsLogLevelDebug SetLogLevelParamsLogLevel = "debug"
-	SetLogLevelParamsLogLevelError SetLogLevelParamsLogLevel = "error"
-	SetLogLevelParamsLogLevelFatal SetLogLevelParamsLogLevel = "fatal"
-	SetLogLevelParamsLogLevelInfo  SetLogLevelParamsLogLevel = "info"
-	SetLogLevelParamsLogLevelPanic SetLogLevelParamsLogLevel = "panic"
-	SetLogLevelParamsLogLevelTrace SetLogLevelParamsLogLevel = "trace"
-	SetLogLevelParamsLogLevelWarn  SetLogLevelParamsLogLevel = "warn"
+	LogLevelRuleSubsystemLibp2p LogLevelRuleSubsystem = "libp2p"
+	LogLevelRuleSubsystemMain   LogLevelRuleSubsystem = "main"
 )
 
 // Defines values for TransactionProofHashtype.
@@ -740,12 +735,15 @@ type LogLevelRule struct {
 	// LogLevel Log level to set.
 	LogLevel LogLevelRuleLogLevel `json:"log-level"`
 
-	// Rule TODO
-	Rule string `json:"rule"`
+	// Subsystem TODO
+	Subsystem LogLevelRuleSubsystem `json:"subsystem"`
 }
 
 // LogLevelRuleLogLevel Log level to set.
 type LogLevelRuleLogLevel string
+
+// LogLevelRuleSubsystem TODO
+type LogLevelRuleSubsystem string
 
 // ParticipationKey Represents a participation key used by the node.
 type ParticipationKey struct {
@@ -830,15 +828,9 @@ type ScratchChange struct {
 
 // SetLogLevelParams Parameters for SetLogLevel.
 type SetLogLevelParams struct {
-	// LogLevel Log level to set.
-	LogLevel *SetLogLevelParamsLogLevel `json:"log-level,omitempty"`
-
-	// Rules Per-package log level rules
-	Rules *[]LogLevelRule `json:"rules,omitempty"`
+	// Mask Per-subsystem log level rules
+	Mask *[]LogLevelRule `json:"mask,omitempty"`
 }
-
-// SetLogLevelParamsLogLevel Log level to set.
-type SetLogLevelParamsLogLevel string
 
 // SimulateInitialStates Initial states of resources that were accessed during simulation.
 type SimulateInitialStates struct {

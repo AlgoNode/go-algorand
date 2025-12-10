@@ -2193,14 +2193,18 @@
             ],
             "type": "string"
           },
-          "rule": {
+          "subsystem": {
             "description": "TODO",
+            "enum": [
+              "main",
+              "libp2p"
+            ],
             "type": "string"
           }
         },
         "required": [
           "log-level",
-          "rule"
+          "subsystem"
         ],
         "type": "object"
       },
@@ -2359,21 +2363,8 @@
       "SetLogLevelParams": {
         "description": "Parameters for SetLogLevel.",
         "properties": {
-          "log-level": {
-            "description": "Log level to set.",
-            "enum": [
-              "panic",
-              "fatal",
-              "error",
-              "warn",
-              "info",
-              "debug",
-              "trace"
-            ],
-            "type": "string"
-          },
-          "rules": {
-            "description": "Per-package log level rules",
+          "mask": {
+            "description": "Per-subsystem log level rules",
             "items": {
               "$ref": "#/components/schemas/LogLevelRule"
             },
