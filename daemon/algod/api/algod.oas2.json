@@ -3845,14 +3845,14 @@
       }
     },
     "LogLevelRule": {
-      "description": "TODO",
+      "description": "A subsystem and log level pair.",
       "type": "object",
       "required": ["subsystem", "log-level"],
       "properties": {
         "subsystem": {
-          "description": "TODO",
+          "description": "Subsystem in which we want to set the log level.",
           "type": "string",
-          "enum": ["main", "libp2p"]
+          "enum": ["main"]
         },
         "log-level": {
           "description": "Log level to set.",

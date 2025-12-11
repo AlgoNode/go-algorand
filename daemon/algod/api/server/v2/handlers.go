@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+
 	"golang.org/x/sync/semaphore"
 
 	"github.com/algorand/avm-abi/apps"
@@ -456,27 +457,6 @@ func (v2 *Handlers) SetLogLevel(ctx echo.Context) error {
 				return badRequest(ctx, errors.New("invalid log level"), "invalid log level", v2.Log)
 			}
 			v2.Log.SetLevel(l)
-		case model.LogLevelRuleSubsystemLibp2p:
-			var l golog.LogLevel
-			switch pair.LogLevel {
-			case "panic":
-				l = golog.LevelDPanic
-			case "fatal":
-				l = golog.LevelFatal
-			case "error":
-				l = golog.LevelError
-			case "warn":
-				l = golog.LevelWarn
-			case "info":
-				l = golog.LevelInfo
-			case "debug":
-				l = golog.LevelDebug
-			case "trace":
-				l = golog.LevelDebug
-			default:
-				return badRequest(ctx, errors.New("invalid log level"), "invalid log level", v2.Log)
-			}
-			golog.SetAllLoggers(l)
 		default:
 			return badRequest(ctx, errors.New("invalid subsystem"), "invalid subsystem", v2.Log)
 		}

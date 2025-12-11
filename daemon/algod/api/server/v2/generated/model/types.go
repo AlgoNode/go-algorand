@@ -34,8 +34,7 @@ const (
 
 // Defines values for LogLevelRuleSubsystem.
 const (
-	LogLevelRuleSubsystemLibp2p LogLevelRuleSubsystem = "libp2p"
-	LogLevelRuleSubsystemMain   LogLevelRuleSubsystem = "main"
+	LogLevelRuleSubsystemMain LogLevelRuleSubsystem = "main"
 )
 
 // Defines values for TransactionProofHashtype.
@@ -730,19 +729,19 @@ type LightBlockHeaderProof struct {
 	Treedepth int `json:"treedepth"`
 }
 
-// LogLevelRule TODO
+// LogLevelRule A subsystem and log level pair.
 type LogLevelRule struct {
 	// LogLevel Log level to set.
 	LogLevel LogLevelRuleLogLevel `json:"log-level"`
 
-	// Subsystem TODO
+	// Subsystem Subsystem in which we want to set the log level.
 	Subsystem LogLevelRuleSubsystem `json:"subsystem"`
 }
 
 // LogLevelRuleLogLevel Log level to set.
 type LogLevelRuleLogLevel string
 
-// LogLevelRuleSubsystem TODO
+// LogLevelRuleSubsystem Subsystem in which we want to set the log level.
 type LogLevelRuleSubsystem string
 
 // ParticipationKey Represents a participation key used by the node.
