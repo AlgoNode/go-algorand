@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -33,6 +34,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+
 	"golang.org/x/sync/semaphore"
 
 	"github.com/algorand/avm-abi/apps"
@@ -56,6 +58,7 @@ import (
 	"github.com/algorand/go-algorand/ledger/simulation"
 	"github.com/algorand/go-algorand/libgoal/participation"
 	"github.com/algorand/go-algorand/logging"
+	"github.com/algorand/go-algorand/network/p2p"
 	"github.com/algorand/go-algorand/node"
 	"github.com/algorand/go-algorand/protocol"
 	"github.com/algorand/go-algorand/rpcs"
@@ -68,6 +71,9 @@ import (
 // but we allow for comments, spacing, and repeated consts
 // in the source TEAL. We have some indication that real TEAL programs with comments are about 20 times bigger than the bytecode they produce, and we may soon allow 16,000 byte logicsigs, implying a maximum of 320kb. Let's call it half a meg for a little room to spare.
 const MaxTealSourceBytes = 512 * 1024
+
+// MaxSetLogLevelBodySize defines the maximum request body size for `POST /v2/node/log-level`
+const MaxSetLogLevelBodySize = 256
 
 // MaxTealDryrunBytes sets a size limit for dryrun requests
 // With the ability to hold unlimited assets DryrunRequests can
@@ -397,6 +403,66 @@ func (v2 *Handlers) AppendKeys(ctx echo.Context, participationID string) error {
 	if err != nil {
 		return internalError(ctx, err, err.Error(), v2.Log)
 	}
+	return nil
+}
+
+// SetLogLevel sets the node log level
+// (POST /v2/node/log-level)
+func (v2 *Handlers) SetLogLevel(ctx echo.Context) error {
+
+	// Read the whole request body
+	buf := new(bytes.Buffer)
+	ctx.Request().Body = http.MaxBytesReader(nil, ctx.Request().Body, MaxSetLogLevelBodySize)
+	_, err := buf.ReadFrom(ctx.Request().Body)
+	if err != nil {
+		return badRequest(ctx, err, err.Error(), v2.Log)
+	}
+
+	// Deserialize input parameters
+	var params model.SetLogLevelJSONRequestBody
+	err = json.Unmarshal(buf.Bytes(), &params)
+	if err != nil {
+		return badRequest(ctx, err, err.Error(), v2.Log)
+	}
+
+	// An empty mask resets all log levels
+	if params.Mask == nil || len(*params.Mask) == 0 {
+		l := logging.Level(v2.Node.Config().BaseLoggerDebugLevel)
+		v2.Log.SetLevel(l)
+		p2p.SetP2PLogLevel(l)
+		return nil
+	}
+
+	// Process every item in the mask
+	for _, pair := range *params.Mask {
+		switch pair.Subsystem {
+		case model.LogLevelRuleSubsystemMain:
+			var l logging.Level
+			switch pair.LogLevel {
+			case "panic":
+				l = logging.Panic
+			case "fatal":
+				l = logging.Fatal
+			case "error":
+				l = logging.Error
+			case "warn":
+				l = logging.Warn
+			case "info":
+				l = logging.Info
+			case "debug":
+				l = logging.Debug
+			case "trace":
+				l = logging.Trace
+			default:
+				return badRequest(ctx, errors.New("invalid log level"), "invalid log level", v2.Log)
+			}
+			v2.Log.SetLevel(l)
+			p2p.SetP2PLogLevel(l)
+		default:
+			return badRequest(ctx, errors.New("invalid subsystem"), "invalid subsystem", v2.Log)
+		}
+	}
+
 	return nil
 }
 

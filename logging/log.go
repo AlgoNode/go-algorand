@@ -56,22 +56,24 @@ var (
 )
 
 const (
-	// Panic Level level, highest level of severity. Logs and then calls panic with the
+	// Panic level, highest level of severity. Logs and then calls panic with the
 	// message passed to Debug, Info, ...
 	Panic Level = iota
-	// Fatal Level level. Logs and then calls `os.Exit(1)`. It will exit even if the
+	// Fatal level. Logs and then calls `os.Exit(1)`. It will exit even if the
 	// logging level is set to Panic.
 	Fatal
-	// Error Level level. Used for errors that should definitely be noted.
+	// Error level. Used for errors that should definitely be noted.
 	// Commonly used for hooks to send errors to an error tracking service.
 	Error
-	// Warn Level level. Non-critical entries that deserve eyes.
+	// Warn level. Non-critical entries that deserve eyes.
 	Warn
-	// Info Level level. General operational entries about what's going on inside the
+	// Info level. General operational entries about what's going on inside the
 	// application.
 	Info
-	// Debug Level level. Usually only enabled when debugging. Very verbose logging.
+	// Debug level. Usually only enabled when debugging. Very verbose logging.
 	Debug
+	// Trace level. Designates finer-grained informational events than the Debug.
+	Trace
 )
 
 const stackPrefix = "[Stack]"
@@ -100,6 +102,11 @@ type Logger interface {
 	Debug(...interface{})
 	Debugln(...interface{})
 	Debugf(string, ...interface{})
+
+	// Trace logs a message at level Trace.
+	Trace(...interface{})
+	Traceln(...interface{})
+	Tracef(string, ...interface{})
 
 	// Info logs a message at level Info.
 	Info(...interface{})
@@ -197,6 +204,18 @@ func (l logger) Debugf(format string, args ...interface{}) {
 	l.source().Debugf(format, args...)
 }
 
+func (l logger) Trace(args ...interface{}) {
+	l.source().Trace(args...)
+}
+
+func (l logger) Traceln(args ...interface{}) {
+	l.source().Traceln(args...)
+}
+
+func (l logger) Tracef(format string, args ...interface{}) {
+	l.source().Tracef(format, args...)
+}
+
 func (l logger) Info(args ...interface{}) {
 	l.source().Info(args...)
 }
@@ -292,11 +311,11 @@ func (l logger) WithFields(fields Fields) Logger {
 }
 
 func (l logger) GetLevel() (lvl Level) {
-	return Level(l.entry.Logger.Level)
+	return Level(l.entry.Logger.GetLevel())
 }
 
 func (l logger) SetLevel(lvl Level) {
-	l.entry.Logger.Level = logrus.Level(lvl)
+	l.entry.Logger.SetLevel(logrus.Level(lvl))
 }
 
 func (l logger) IsLevelEnabled(level Level) bool {

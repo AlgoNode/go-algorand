@@ -21,6 +21,22 @@ const (
 	AccountSigTypeSig  AccountSigType = "sig"
 )
 
+// Defines values for LogLevelRuleLogLevel.
+const (
+	LogLevelRuleLogLevelDebug LogLevelRuleLogLevel = "debug"
+	LogLevelRuleLogLevelError LogLevelRuleLogLevel = "error"
+	LogLevelRuleLogLevelFatal LogLevelRuleLogLevel = "fatal"
+	LogLevelRuleLogLevelInfo  LogLevelRuleLogLevel = "info"
+	LogLevelRuleLogLevelPanic LogLevelRuleLogLevel = "panic"
+	LogLevelRuleLogLevelTrace LogLevelRuleLogLevel = "trace"
+	LogLevelRuleLogLevelWarn  LogLevelRuleLogLevel = "warn"
+)
+
+// Defines values for LogLevelRuleSubsystem.
+const (
+	LogLevelRuleSubsystemMain LogLevelRuleSubsystem = "main"
+)
+
 // Defines values for TransactionProofHashtype.
 const (
 	TransactionProofHashtypeSha256    TransactionProofHashtype = "sha256"
@@ -713,6 +729,21 @@ type LightBlockHeaderProof struct {
 	Treedepth int `json:"treedepth"`
 }
 
+// LogLevelRule A subsystem and log level pair.
+type LogLevelRule struct {
+	// LogLevel Log level to set.
+	LogLevel LogLevelRuleLogLevel `json:"log-level"`
+
+	// Subsystem Subsystem in which we want to set the log level.
+	Subsystem LogLevelRuleSubsystem `json:"subsystem"`
+}
+
+// LogLevelRuleLogLevel Log level to set.
+type LogLevelRuleLogLevel string
+
+// LogLevelRuleSubsystem Subsystem in which we want to set the log level.
+type LogLevelRuleSubsystem string
+
 // ParticipationKey Represents a participation key used by the node.
 type ParticipationKey struct {
 	// Address Address the key was generated for.
@@ -792,6 +823,12 @@ type ScratchChange struct {
 
 	// Slot The scratch slot written.
 	Slot int `json:"slot"`
+}
+
+// SetLogLevelParams Parameters for SetLogLevel.
+type SetLogLevelParams struct {
+	// Mask Per-subsystem log level rules
+	Mask *[]LogLevelRule `json:"mask,omitempty"`
 }
 
 // SimulateInitialStates Initial states of resources that were accessed during simulation.
@@ -1625,6 +1662,9 @@ type SimulateTransactionParams struct {
 
 // SimulateTransactionParamsFormat defines parameters for SimulateTransaction.
 type SimulateTransactionParamsFormat string
+
+// SetLogLevelJSONRequestBody defines body for SetLogLevel for application/json ContentType.
+type SetLogLevelJSONRequestBody = SetLogLevelParams
 
 // TealCompileTextRequestBody defines body for TealCompile for text/plain ContentType.
 type TealCompileTextRequestBody = TealCompileTextBody

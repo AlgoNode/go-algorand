@@ -2177,6 +2177,36 @@
         ],
         "type": "object"
       },
+      "LogLevelRule": {
+        "description": "A subsystem and log level pair.",
+        "properties": {
+          "log-level": {
+            "description": "Log level to set.",
+            "enum": [
+              "panic",
+              "fatal",
+              "error",
+              "warn",
+              "info",
+              "debug",
+              "trace"
+            ],
+            "type": "string"
+          },
+          "subsystem": {
+            "description": "Subsystem in which we want to set the log level.",
+            "enum": [
+              "main"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "log-level",
+          "subsystem"
+        ],
+        "type": "object"
+      },
       "ParticipationKey": {
         "description": "Represents a participation key used by the node.",
         "properties": {
@@ -2327,6 +2357,19 @@
           "new-value",
           "slot"
         ],
+        "type": "object"
+      },
+      "SetLogLevelParams": {
+        "description": "Parameters for SetLogLevel.",
+        "properties": {
+          "mask": {
+            "description": "Per-subsystem log level rules",
+            "items": {
+              "$ref": "#/components/schemas/LogLevelRule"
+            },
+            "type": "array"
+          }
+        },
         "type": "object"
       },
       "SimulateInitialStates": {
@@ -5771,6 +5814,48 @@
           "public",
           "data"
         ]
+      }
+    },
+    "/v2/node/log-level": {
+      "post": {
+        "description": "Set the node log level",
+        "operationId": "SetLogLevel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetLogLevelParams"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          }
+        },
+        "tags": [
+          "private",
+          "nonparticipating"
+        ],
+        "x-codegen-request-body-name": "SetLogLevelParams"
       }
     },
     "/v2/participation": {
