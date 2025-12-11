@@ -58,13 +58,12 @@ import (
 	"github.com/algorand/go-algorand/ledger/simulation"
 	"github.com/algorand/go-algorand/libgoal/participation"
 	"github.com/algorand/go-algorand/logging"
+	"github.com/algorand/go-algorand/network/p2p"
 	"github.com/algorand/go-algorand/node"
 	"github.com/algorand/go-algorand/protocol"
 	"github.com/algorand/go-algorand/rpcs"
 	"github.com/algorand/go-algorand/stateproof"
 	"github.com/algorand/go-algorand/util"
-
-	golog "github.com/ipfs/go-log/v2"
 )
 
 // MaxTealSourceBytes sets a size limit for TEAL source programs for requests
@@ -428,8 +427,9 @@ func (v2 *Handlers) SetLogLevel(ctx echo.Context) error {
 
 	// An empty mask resets all log levels
 	if params.Mask == nil || len(*params.Mask) == 0 {
-		v2.Log.SetLevel(logging.Level(v2.Node.Config().BaseLoggerDebugLevel))
-		golog.SetAllLoggers(golog.LevelWarn)
+		l := logging.Level(v2.Node.Config().BaseLoggerDebugLevel)
+		v2.Log.SetLevel(l)
+		p2p.SetP2PLogLevel(l)
 		return nil
 	}
 
@@ -457,6 +457,7 @@ func (v2 *Handlers) SetLogLevel(ctx echo.Context) error {
 				return badRequest(ctx, errors.New("invalid log level"), "invalid log level", v2.Log)
 			}
 			v2.Log.SetLevel(l)
+			p2p.SetP2PLogLevel(l)
 		default:
 			return badRequest(ctx, errors.New("invalid subsystem"), "invalid subsystem", v2.Log)
 		}
